@@ -10,6 +10,7 @@ import NewListing from './pages/NewListing';
 import Chat from './pages/Chat';
 import Admin from './pages/Admin';
 import EditListing from './pages/EditListing';
+import Footer from './components/Footer';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -72,6 +73,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Footer/>
     </>
   );
 }

@@ -112,10 +112,11 @@ export default function Home() {
           ))}
         </div>
       )}
+      
 
-      <p className="mt-8 text-center text-sm text-slate-500">
+      {/*<p className="mt-8 text-center text-sm text-slate-500">
         Only legal items allowed. Admins may remove listings. NIT Jalandhar students only.
-      </p>
+      </p>*/}
     </div>
   );
 }
