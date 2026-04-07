@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import { authApi } from '../api/axios';  // Changed from 'api' to 'authApi'
 import { useAuth } from '../context/AuthContext';
 
 const YEARS = ['1', '2', '3', '4', 'MTech'];
@@ -30,7 +30,7 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/register', form);
+      const { data } = await authApi.post('/auth/register', form);  // Changed to authApi
       login(data.token, data.user);
       navigate('/');
     } catch (err) {

@@ -76,6 +76,7 @@ router.post('/register', authLimiter, async (req, res) => {
         year: user.year,
         branch: user.branch,
         role: user.role,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -115,6 +116,7 @@ router.post('/login', authLimiter, async (req, res) => {
         year: user.year,
         branch: user.branch,
         role: user.role,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -154,6 +156,7 @@ router.post('/verify-email', authLimiter, async (req, res) => {
         year: user.year,
         branch: user.branch,
         role: user.role,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -174,8 +177,76 @@ router.get('/me', protect, (req, res) => {
       year: req.user.year,
       branch: req.user.branch,
       role: req.user.role,
+      profilePicture: req.user.profilePicture,
     },
   });
+});
+
+// POST /api/auth/upload-profile-picture
+router.post('/upload-profile-picture', protect, async (req, res) => {
+  try {
+    const { profilePicture } = req.body;
+
+    if (!profilePicture) {
+      return res.status(400).json({ message: 'No image provided.' });
+    }
+
+    // Validate base64 format
+    if (!profilePicture.startsWith('data:image/')) {
+      return res.status(400).json({ message: 'Invalid image format.' });
+    }
+
+    // Check file size (limit to 5MB in base64)
+    const sizeInBytes = (profilePicture.length * 3) / 4;
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (sizeInBytes > maxSize) {
+      return res.status(400).json({ message: 'Image too large. Maximum size is 5MB.' });
+    }
+
+    // Update user profile picture
+    req.user.profilePicture = profilePicture;
+    await req.user.save();
+
+    res.json({
+      message: 'Profile picture updated successfully.',
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.name,
+        year: req.user.year,
+        branch: req.user.branch,
+        role: req.user.role,
+        profilePicture: req.user.profilePicture,
+      },
+    });
+  } catch (err) {
+    console.error('Profile picture upload error:', err);
+    res.status(500).json({ message: 'Failed to upload profile picture.' });
+  }
+});
+
+// DELETE /api/auth/delete-profile-picture
+router.delete('/delete-profile-picture', protect, async (req, res) => {
+  try {
+    req.user.profilePicture = null;
+    await req.user.save();
+
+    res.json({
+      message: 'Profile picture deleted successfully.',
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.name,
+        year: req.user.year,
+        branch: req.user.branch,
+        role: req.user.role,
+        profilePicture: req.user.profilePicture,
+      },
+    });
+  } catch (err) {
+    console.error('Profile picture delete error:', err);
+    res.status(500).json({ message: 'Failed to delete profile picture.' });
+  }
 });
 
 export default router;

@@ -16,6 +16,11 @@ const chatSchema = new mongoose.Schema({
     senderId: mongoose.Schema.Types.ObjectId,
     createdAt: Date,
   },
+  unreadCount: {
+    type: Map,
+    of: Number,
+    default: {},
+  },
   updatedAt: {
     type: Date,
     default: Date.now,

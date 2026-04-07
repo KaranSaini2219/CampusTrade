@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import { authApi } from '../api/axios';  // Changed from 'api' to 'authApi'
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -16,7 +16,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await authApi.post('/auth/login', { email, password });  // Changed to authApi
       login(data.token, data.user);
       navigate('/');
     } catch (err) {

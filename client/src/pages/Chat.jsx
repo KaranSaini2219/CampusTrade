@@ -3,6 +3,21 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
+import Avatar from '../components/Avatar';
+
+// WhatsApp-style checkmark components - uniform thickness
+const SingleCheck = ({ className = '' }) => (
+  <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.28 6.28l-9 9a1 1 0 01-1.41 0l-4-4a1 1 0 111.41-1.41L7.57 13.15l8.3-8.3a1 1 0 011.41 1.42z" fill="currentColor"/>
+  </svg>
+);
+
+const DoubleCheck = ({ className = '' }) => (
+  <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.28 6.28l-5.5 5.5a1 1 0 01-1.41 0l-2-2a1 1 0 111.41-1.41L11 9.59l4.87-4.88a1 1 0 011.41 1.42z" fill="currentColor"/>
+    <path d="M12.78 6.28l-5.5 5.5a1 1 0 01-1.41 0l-4-4a1 1 0 111.41-1.41L6.57 9.65l4.8-4.8a1 1 0 011.41 1.42z" fill="currentColor"/>
+  </svg>
+);
 
 export default function Chat() {
   const { user } = useAuth();
@@ -22,6 +37,7 @@ export default function Chat() {
   
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const markSeenTimeoutRef = useRef(null);
 
   // Initialize Socket.IO connection
   useEffect(() => {
@@ -55,11 +71,32 @@ export default function Chat() {
       setSocketConnected(false);
     });
 
+    // Listen for messages seen events
+    socketRef.current.on('messagesSeen', ({ chatId, seenBy }) => {
+      console.log('📖 Messages seen in chat:', chatId);
+      
+      // Update messages to mark them as seen
+      setMessages((prev) => 
+        prev.map((msg) => {
+          if (msg.chatId === chatId && !msg.seenBy?.includes(seenBy)) {
+            return {
+              ...msg,
+              seenBy: [...(msg.seenBy || []), seenBy],
+            };
+          }
+          return msg;
+        })
+      );
+    });
+
     return () => {
       if (socketRef.current) {
         console.log('Disconnecting socket...');
         socketRef.current.disconnect();
         socketRef.current = null;
+      }
+      if (markSeenTimeoutRef.current) {
+        clearTimeout(markSeenTimeoutRef.current);
       }
     };
   }, [user]);
@@ -134,7 +171,34 @@ export default function Chat() {
           if (exists) return prev;
           return [...prev, msg];
         });
+
+        // If message is from other user, mark as seen after a short delay
+        if (msg.senderId?._id !== user?.id && msg.senderId !== user?.id) {
+          if (markSeenTimeoutRef.current) {
+            clearTimeout(markSeenTimeoutRef.current);
+          }
+          markSeenTimeoutRef.current = setTimeout(() => {
+            markMessagesAsSeen(chatId);
+          }, 1000);
+        }
       }
+
+      // Update chat in the list with new last message
+      setChats((prev) => prev.map((c) => {
+        if (c._id === msg.chatId) {
+          return {
+            ...c,
+            lastMessage: {
+              content: msg.content,
+              senderId: msg.senderId,
+              createdAt: msg.createdAt,
+            },
+            unreadCount: msg.chatId === activeChat?._id ? 0 : (c.unreadCount || 0) + 1,
+            updatedAt: new Date(),
+          };
+        }
+        return c;
+      }));
     };
 
     socketRef.current.on('newMessage', handleNewMessage);
@@ -145,7 +209,7 @@ export default function Chat() {
       socketRef.current?.emit('leaveChat', chatId);
       socketRef.current?.off('newMessage', handleNewMessage);
     };
-  }, [activeChat?._id]);
+  }, [activeChat?._id, user?.id]);
 
   const loadMessages = async (chatId) => {
     try {
@@ -155,6 +219,11 @@ export default function Chat() {
       const res = await api.get(`/chats/${chatId}/messages`);
       console.log('Loaded messages:', res.data.length);
       setMessages(res.data);
+
+      // Mark messages as seen after loading
+      setTimeout(() => {
+        markMessagesAsSeen(chatId);
+      }, 1000);
     } catch (err) {
       console.error('Error loading messages:', err);
       
@@ -166,6 +235,26 @@ export default function Chat() {
       }
     } finally {
       setLoadingMessages(false);
+    }
+  };
+
+  const markMessagesAsSeen = async (chatId) => {
+    try {
+      await api.post(`/chats/${chatId}/messages/mark-seen`);
+      
+      // Update local unread count
+      setChats((prev) => prev.map((c) => {
+        if (c._id === chatId) {
+          return { ...c, unreadCount: 0 };
+        }
+        return c;
+      }));
+      
+      if (activeChat?._id === chatId) {
+        setActiveChat((prev) => ({ ...prev, unreadCount: 0 }));
+      }
+    } catch (err) {
+      console.error('Error marking messages as seen:', err);
     }
   };
 
@@ -234,6 +323,20 @@ export default function Chat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Check if a message has been seen by the other user
+  const isMessageSeen = (message) => {
+    if (!message.seenBy || message.seenBy.length === 0) return false;
+    
+    const isSentByMe = message.senderId?._id === user?.id || message.senderId === user?.id;
+    if (!isSentByMe) return false;
+
+    // Check if other user has seen it
+    return message.seenBy.some((seenUserId) => {
+      const seenUserIdStr = typeof seenUserId === 'object' ? seenUserId._id : seenUserId;
+      return seenUserIdStr.toString() !== user?.id.toString();
+    });
+  };
 
   if (loading) {
     return (
@@ -305,8 +408,13 @@ export default function Chat() {
                   >
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-sm">
-                        {(chat.otherUser?.name || '?')[0].toUpperCase()}
+                      <div className="relative">
+                        <Avatar user={chat.otherUser} size="lg" className="shadow-sm flex-shrink-0" />
+                        {chat.unreadCount > 0 && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                            {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Chat Info */}
@@ -318,14 +426,14 @@ export default function Chat() {
                           {chat.listingId?.title || 'Listing'}
                         </p>
                         {chat.lastMessage && (
-                          <p className="text-xs text-slate-400 truncate mt-1">
+                          <p className={`text-xs truncate mt-1 ${chat.unreadCount > 0 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
                             {chat.lastMessage.content}
                           </p>
                         )}
                       </div>
                       
-                      {/* Unread Indicator (optional - can add unread count later) */}
-                      {activeChat?._id !== chat._id && chat.lastMessage && (
+                      {/* Unread Indicator */}
+                      {activeChat?._id !== chat._id && chat.unreadCount > 0 && (
                         <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                       )}
                     </div>
@@ -342,9 +450,7 @@ export default function Chat() {
                 {/* Chat Header */}
                 <div className="p-5 border-b border-slate-200 bg-white shadow-sm">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold">
-                      {(activeChat.otherUser?.name || '?')[0].toUpperCase()}
-                    </div>
+                    <Avatar user={activeChat.otherUser} size="md" />
                     <div className="flex-1">
                       <p className="font-semibold text-slate-800">
                         {activeChat.otherUser?.name || 'Unknown User'}
@@ -382,6 +488,7 @@ export default function Chat() {
                     messages.map((m, index) => {
                       const isSentByMe = m.senderId?._id === user?.id || m.senderId === user?.id;
                       const showAvatar = index === 0 || messages[index - 1]?.senderId?._id !== m.senderId?._id;
+                      const messageSeen = isMessageSeen(m);
                       
                       return (
                         <div
@@ -389,9 +496,7 @@ export default function Chat() {
                           className={`flex gap-2 ${isSentByMe ? 'justify-end' : 'justify-start'}`}
                         >
                           {!isSentByMe && showAvatar && (
-                            <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 text-sm font-semibold flex-shrink-0">
-                              {(activeChat.otherUser?.name || '?')[0].toUpperCase()}
-                            </div>
+                            <Avatar user={activeChat.otherUser} size="sm" className="flex-shrink-0" />
                           )}
                           {!isSentByMe && !showAvatar && <div className="w-8"></div>}
                           
@@ -405,12 +510,23 @@ export default function Chat() {
                             >
                               <p className="break-words whitespace-pre-wrap">{m.content}</p>
                             </div>
-                            <p className={`text-xs mt-1 px-2 ${isSentByMe ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {new Date(m.createdAt).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </p>
+                            <div className={`flex items-center gap-1.5 text-xs mt-1 px-2 ${isSentByMe ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span>
+                                {new Date(m.createdAt).toLocaleTimeString([], { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </span>
+                              {isSentByMe && (
+                                <span className="inline-flex items-center">
+                                  {messageSeen ? (
+                                    <DoubleCheck className="text-blue-500 w-4 h-4" />
+                                  ) : (
+                                    <SingleCheck className="text-slate-400 w-4 h-4" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );

@@ -17,6 +17,11 @@ const messageSchema = new mongoose.Schema({
     trim: true,
     maxlength: 2000,
   },
+  seenBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: [],
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -24,5 +29,6 @@ const messageSchema = new mongoose.Schema({
 });
 
 messageSchema.index({ chatId: 1, createdAt: 1 });
+messageSchema.index({ chatId: 1, seenBy: 1 });
 
 export default mongoose.model('Message', messageSchema);

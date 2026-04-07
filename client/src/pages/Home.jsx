@@ -66,7 +66,7 @@ export default function Home() {
               Campus Marketplace
             </h1>
             <p className="text-blue-100 text-sm md:text-base max-w-2xl mx-auto">
-              Official student marketplace for NIT Jalandhar • Safe campus trades • Cash only
+              Official student marketplace for NIT Jalandhar • Safe campus trades
             </p>
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Footer Info */}
+        {/* Footer Info 
         {listings.length > 0 && (
           <div className="mt-12 text-center">
             <div className="inline-flex items-center gap-2 text-sm text-slate-500">
@@ -189,7 +189,7 @@ export default function Home() {
               All listings are verified by NIT Jalandhar students
             </div>
           </div>
-        )}
+        )}*/}
       </div>
     </div>
   );

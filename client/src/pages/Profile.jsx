@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
+import Avatar from '../components/Avatar';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [tab, setTab] = useState('listings');
   const [myListings, setMyListings] = useState([]);
   const [savedListings, setSavedListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     api.get('/listings?mine=1').then((res) => setMyListings(res.data)).catch(() => {});
@@ -27,6 +30,71 @@ export default function Profile() {
       await api.post(`/listings/${listingId}/save`);
       setSavedListings((prev) => prev.filter((l) => l._id !== listingId));
     } catch (err) {}
+  };
+
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB.');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result;
+          const response = await api.post('/auth/upload-profile-picture', {
+            profilePicture: base64String,
+          });
+
+          // Update user in context and localStorage
+          updateUser(response.data.user);
+          alert('Profile picture updated successfully!');
+        } catch (err) {
+          console.error('Upload error:', err);
+          alert(err.response?.data?.message || 'Failed to upload profile picture.');
+        } finally {
+          setUploading(false);
+        }
+      };
+      reader.onerror = () => {
+        alert('Failed to read file.');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('File reading error:', err);
+      alert('Failed to process image.');
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteProfilePicture = async () => {
+    if (!confirm('Are you sure you want to remove your profile picture?')) {
+      return;
+    }
+
+    try {
+      const response = await api.delete('/auth/delete-profile-picture');
+      updateUser(response.data.user);
+      alert('Profile picture removed successfully!');
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to remove profile picture.');
+    }
   };
 
   // Calculate stats
@@ -59,11 +127,43 @@ export default function Profile() {
           
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
-              {/* Profile Avatar */}
+              {/* Profile Avatar with Upload */}
               <div className="flex-shrink-0">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-900 to-blue-700 rounded-lg flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                  {user?.name?.charAt(0).toUpperCase() || 'S'}
+                <div className="relative group">
+                  <Avatar user={user} size="2xl" className="shadow-lg" />
+                  
+                  {/* Upload/Delete Overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 rounded-full transition-all flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50"
+                      >
+                        {uploading ? 'Uploading...' : user?.profilePicture ? 'Change' : 'Upload'}
+                      </button>
+                      {user?.profilePicture && (
+                        <button
+                          onClick={handleDeleteProfilePicture}
+                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureChange}
+                    className="hidden"
+                  />
                 </div>
+                <p className="text-xs text-center text-slate-500 mt-2">
+                  Hover to {user?.profilePicture ? 'change' : 'upload'}
+                </p>
               </div>
 
               {/* Student Info */}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Avatar from './Avatar';
 
 const Icon = ({ children, className = '' }) => (
   <span className={`inline-flex items-center justify-center w-4 h-4 ${className}`}>{children}</span>
@@ -14,11 +15,6 @@ const HomeIcon = () => (
 const ChatIcon = () => (
   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-  </svg>
-);
-const ProfileIcon = () => (
-  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 const LogoutIcon = () => (
@@ -94,7 +90,7 @@ export default function Navbar() {
               </button>
             </form>
 
-            {/* Right: Post Item, Chats, Profile, Admin, Welcome, Logout */}
+            {/* Right: Post Item, Chats, Profile (with avatar), Admin, Logout */}
             <div className="flex items-center gap-4 shrink-0 ml-auto">
               {user ? (
                 <>
@@ -105,9 +101,9 @@ export default function Navbar() {
                     <Icon><ChatIcon /></Icon>
                     Chats
                   </Link>
-                  <Link to="/profile" className="flex items-center gap-1.5 text-gray-200 hover:text-white transition-colors">
-                    <Icon><ProfileIcon /></Icon>
-                    Profile
+                  <Link to="/profile" className="flex items-center gap-2 text-gray-200 hover:text-white transition-colors">
+                    <Avatar user={user} size="sm" />
+                    <span className="hidden lg:inline">Profile</span>
                   </Link>
                   {user.role === 'admin' && (
                     <Link to="/admin" className="text-amber-400 hover:text-amber-300 font-medium">
@@ -119,7 +115,7 @@ export default function Navbar() {
                     className="flex items-center gap-1.5 text-gray-300 hover:text-white transition-colors"
                   >
                     <Icon><LogoutIcon /></Icon>
-                    Logout
+                    <span className="hidden lg:inline">Logout</span>
                   </button>
                 </>
               ) : (
@@ -176,7 +172,8 @@ export default function Navbar() {
               <Link to="/chat" className="flex items-center gap-2 py-2 text-gray-200" onClick={() => setMobileOpen(false)}>
                 Chats
               </Link>
-              <Link to="/profile" className="flex items-center gap-2 py-2 text-gray-200" onClick={() => setMobileOpen(false)}>
+              <Link to="/profile" className="flex items-center gap-3 py-2 text-gray-200" onClick={() => setMobileOpen(false)}>
+                <Avatar user={user} size="sm" />
                 Profile
               </Link>
               {user.role === 'admin' && (

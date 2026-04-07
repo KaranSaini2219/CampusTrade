@@ -21,18 +21,22 @@ function sortParticipants(participants) {
 router.get('/', protect, async (req, res) => {
   try {
     const chats = await Chat.find({ participants: req.user._id })
-      .populate('participants', 'name email year branch')
+      .populate('participants', 'name email year branch profilePicture')
       .populate('listingId', 'title price images isSold')
       .sort({ updatedAt: -1 })
       .lean();
 
     const formatted = chats.map((c) => {
       const other = c.participants.find((p) => p._id.toString() !== req.user._id.toString());
+      const userIdStr = req.user._id.toString();
+      const unreadCount = c.unreadCount?.get?.(userIdStr) || 0;
+      
       return {
         _id: c._id,
         otherUser: other || { name: 'Unknown User', _id: null },
         listingId: c.listingId,
         lastMessage: c.lastMessage,
+        unreadCount: unreadCount,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
       };
@@ -100,7 +104,7 @@ router.post('/start', protect, async (req, res) => {
       participants: { $all: sortedParticipants },
       listingId: listingId,
     })
-      .populate('participants', 'name email year branch')
+      .populate('participants', 'name email year branch profilePicture')
       .populate('listingId', 'title price images isSold')
       .lean();
 
@@ -114,13 +118,17 @@ router.post('/start', protect, async (req, res) => {
         const newChat = await Chat.create({
           participants: sortedParticipants,
           listingId: listingId,
+          unreadCount: new Map([
+            [sortedParticipants[0], 0],
+            [sortedParticipants[1], 0],
+          ]),
         });
         
         console.log('✅ Chat created:', newChat._id);
         
         // Fetch populated version
         chat = await Chat.findById(newChat._id)
-          .populate('participants', 'name email year branch')
+          .populate('participants', 'name email year branch profilePicture')
           .populate('listingId', 'title price images isSold')
           .lean();
         
@@ -135,7 +143,7 @@ router.post('/start', protect, async (req, res) => {
             participants: { $all: sortedParticipants },
             listingId: listingId,
           })
-            .populate('participants', 'name email year branch')
+            .populate('participants', 'name email year branch profilePicture')
             .populate('listingId', 'title price images isSold')
             .lean();
           
@@ -153,11 +161,19 @@ router.post('/start', protect, async (req, res) => {
       (p) => p._id.toString() !== currentUserId
     );
 
+    const unreadCount = chat.unreadCount?.get?.(currentUserId) || 0;
+
     const response = {
       _id: chat._id,
-      otherUser: other || { name: seller.name, _id: seller._id, email: seller.email },
+      otherUser: other || { 
+        name: seller.name, 
+        _id: seller._id, 
+        email: seller.email,
+        profilePicture: seller.profilePicture
+      },
       listingId: chat.listingId,
       lastMessage: chat.lastMessage,
+      unreadCount: unreadCount,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
     };
@@ -199,7 +215,7 @@ router.get('/:chatId/messages', protect, async (req, res) => {
     }
 
     const messages = await Message.find({ chatId: req.params.chatId })
-      .populate('senderId', 'name email')
+      .populate('senderId', 'name email profilePicture')
       .sort({ createdAt: 1 })
       .lean();
 
@@ -208,6 +224,72 @@ router.get('/:chatId/messages', protect, async (req, res) => {
   } catch (err) {
     console.error('❌ Error fetching messages:', err);
     res.status(500).json({ message: 'Failed to fetch messages.', error: err.message });
+  }
+});
+
+// POST /api/chats/:chatId/messages/mark-seen - Mark messages as seen
+router.post('/:chatId/messages/mark-seen', protect, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.chatId)) {
+      return res.status(400).json({ message: 'Invalid chat ID format.' });
+    }
+
+    const chat = await Chat.findById(req.params.chatId);
+    
+    if (!chat) {
+      return res.status(404).json({ message: 'Chat not found.' });
+    }
+    
+    // SECURITY: Verify user is a participant
+    const isParticipant = chat.participants.some(
+      (p) => p.toString() === req.user._id.toString()
+    );
+    
+    if (!isParticipant) {
+      return res.status(403).json({ message: 'You do not have access to this chat.' });
+    }
+
+    const userId = req.user._id;
+
+    // Mark all messages in this chat as seen by this user
+    // Only mark messages not sent by the user and not already seen
+    await Message.updateMany(
+      {
+        chatId: req.params.chatId,
+        senderId: { $ne: userId },
+        seenBy: { $ne: userId },
+      },
+      {
+        $addToSet: { seenBy: userId },
+      }
+    );
+
+    // Reset unread count for this user
+    const userIdStr = userId.toString();
+    if (!chat.unreadCount) {
+      chat.unreadCount = new Map();
+    }
+    chat.unreadCount.set(userIdStr, 0);
+    await chat.save();
+
+    // Emit socket event to other participant(s) that messages were seen
+    const io = req.app.get('io');
+    if (io) {
+      chat.participants.forEach((participantId) => {
+        if (participantId.toString() !== userId.toString()) {
+          io.to(`user:${participantId}`).emit('messagesSeen', {
+            chatId: req.params.chatId,
+            seenBy: userId,
+          });
+        }
+      });
+    }
+
+    res.json({ message: 'Messages marked as seen.' });
+    
+  } catch (err) {
+    console.error('❌ Error marking messages as seen:', err);
+    res.status(500).json({ message: 'Failed to mark messages as seen.', error: err.message });
   }
 });
 
@@ -240,10 +322,12 @@ router.post('/:chatId/messages', protect, async (req, res) => {
       return res.status(403).json({ message: 'You do not have access to this chat.' });
     }
 
+    // Create message with sender automatically in seenBy
     const message = await Message.create({
       chatId: req.params.chatId,
       senderId: req.user._id,
       content: content.trim().substring(0, 2000),
+      seenBy: [req.user._id], // Sender has "seen" their own message
     });
 
     // Update chat's last message
@@ -253,10 +337,24 @@ router.post('/:chatId/messages', protect, async (req, res) => {
       createdAt: message.createdAt,
     };
     chat.updatedAt = new Date();
+
+    // Increment unread count for other participant(s)
+    if (!chat.unreadCount) {
+      chat.unreadCount = new Map();
+    }
+    
+    chat.participants.forEach((participantId) => {
+      const participantIdStr = participantId.toString();
+      if (participantIdStr !== req.user._id.toString()) {
+        const currentCount = chat.unreadCount.get(participantIdStr) || 0;
+        chat.unreadCount.set(participantIdStr, currentCount + 1);
+      }
+    });
+
     await chat.save();
 
     const populated = await Message.findById(message._id)
-      .populate('senderId', 'name email')
+      .populate('senderId', 'name email profilePicture')
       .lean();
 
     // Emit via Socket.IO
