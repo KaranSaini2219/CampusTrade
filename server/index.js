@@ -1,3 +1,8 @@
+// FIRST LINE - before everything else
+import dotenv from 'dotenv';
+dotenv.config();
+
+// THEN all other imports
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -5,9 +10,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import listingRoutes from './routes/listings.js';
@@ -16,8 +18,11 @@ import reportRoutes from './routes/reports.js';
 import adminRoutes from './routes/admin.js';
 import { setupSocketIO } from './socket/index.js';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 connectDB();
+
+// rest of your code stays exactly the same...
 
 const app = express();
 const httpServer = createServer(app);
