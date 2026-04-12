@@ -9,23 +9,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const stored = localStorage.getItem('user');
-    if (token && stored) {
-      api
-        .get('/auth/me')
-        .then((res) => {
-          setUser(res.data.user);
-          localStorage.setItem('user', JSON.stringify(res.data.user));
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
+    if (!token) {          // ← only check token, not stored user
       setLoading(false);
+      return;
     }
+    api
+      .get('/auth/me')     // ← always fetch fresh from DB on refresh
+      .then((res) => {
+         console.log('FROM /auth/me:', res.data.user); // ← ADDED
+        setUser(res.data.user);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = (token, userData) => {
@@ -57,3 +57,6 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+
+
+
