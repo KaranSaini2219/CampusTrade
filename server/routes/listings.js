@@ -8,6 +8,8 @@ import { protect } from '../middleware/auth.js';
 import { checkBannedContent } from '../utils/contentFilter.js';
 import { upload, cloudinary, useCloudinary } from '../config/cloudinary.js';
 
+console.log('>>> THIS IS THE LISTINGS FILE BEING LOADED <<<');
+
 const router = express.Router();
 
 const CATEGORIES = ['Electronics', 'Books', 'Furniture', 'Sports', 'Clothing', 'Study Material', 'Other'];
@@ -40,6 +42,7 @@ router.get('/saved', protect, async (req, res) => {
 
 // GET /api/listings - Public (search, filter, sort) or ?mine=1 for own
 router.get('/', async (req, res) => {
+  console.log('>>> ROUTE HANDLER ENTERED <<<');
   try {
     const { search, category, sort = 'newest', minPrice, maxPrice, mine } = req.query;
     const query = {};
@@ -68,6 +71,16 @@ router.get('/', async (req, res) => {
     let sortOpt = { createdAt: -1 };
     if (sort === 'price-asc') sortOpt = { price: 1 };
     if (sort === 'price-desc') sortOpt = { price: -1 };
+    
+    
+console.log("DB:", Listing.db.name);
+console.log("QUERY:", query);
+
+const total = await Listing.countDocuments({});
+const unsold = await Listing.countDocuments({ isSold: false });
+
+console.log("TOTAL LISTINGS:", total);
+console.log("UNSOLD LISTINGS:", unsold);
 
     const listings = await Listing.find(query)
       .populate('sellerId', 'name year branch')
