@@ -7,6 +7,7 @@ import BlockLog from '../models/BlockLog.js';
 import { protect } from '../middleware/auth.js';
 import { checkBannedContent } from '../utils/contentFilter.js';
 import { upload, cloudinary, useCloudinary } from '../config/cloudinary.js';
+import User from '../models/User.js';
 
 console.log('>>> THIS IS THE LISTINGS FILE BEING LOADED <<<');
 
@@ -55,8 +56,12 @@ router.get('/', async (req, res) => {
         return res.json([]);
       }
     } else {
-      query.isSold = false;
-    }
+  query.isSold = false;
+  const bannedUsers = await User.find({ isBanned: true }).select('_id').lean();
+  const bannedIds = bannedUsers.map(u => u._id);
+  console.log('BANNED USER IDS:', bannedIds);
+  query.sellerId = { $nin: bannedIds };
+}
 
     if (search) {
       query.$or = [

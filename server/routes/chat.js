@@ -20,13 +20,18 @@ function sortParticipants(participants) {
 // GET /api/chats - Get user's chats
 router.get('/', protect, async (req, res) => {
   try {
-    const chats = await Chat.find({ participants: req.user._id })
-      .populate('participants', 'name email year branch profilePicture')
-      .populate('listingId', 'title price images isSold')
-      .sort({ updatedAt: -1 })
-      .lean();
+   const chats = await Chat.find({ participants: req.user._id })
+  .populate('participants', 'name email year branch profilePicture isBanned')
+  .populate('listingId', 'title price images isSold')
+  .sort({ updatedAt: -1 })
+  .lean();
 
-    const formatted = chats.map((c) => {
+  const filteredChats = chats.filter(c => {
+  const other = c.participants.find(p => p._id.toString() !== req.user._id.toString());
+  return other && !other.isBanned;
+});
+
+    const formatted = filteredChats.map((c) => {
       const other = c.participants.find((p) => p._id.toString() !== req.user._id.toString());
       const userIdStr = req.user._id.toString();
       const unreadCount = c.unreadCount?.get?.(userIdStr) || 0;
@@ -91,6 +96,10 @@ router.post('/start', protect, async (req, res) => {
       console.log('❌ Seller not found:', sellerId);
       return res.status(404).json({ message: 'The seller of this listing no longer exists.' });
     }
+    
+    if (seller.isBanned) {
+  return res.status(403).json({ message: 'This user has been banned.' });
+}
 
     console.log('✅ Seller exists:', seller.name);
 
@@ -213,6 +222,14 @@ router.get('/:chatId/messages', protect, async (req, res) => {
       console.warn('⚠️ Unauthorized access attempt to chat:', req.params.chatId);
       return res.status(403).json({ message: 'You do not have access to this chat.' });
     }
+
+    const otherParticipantId = chat.participants.find(
+  p => p.toString() !== req.user._id.toString()
+);
+const otherUser = await User.findById(otherParticipantId).lean();
+if (otherUser?.isBanned) {
+  return res.status(403).json({ message: 'You cannot message a banned user.' });
+}
 
     const messages = await Message.find({ chatId: req.params.chatId })
       .populate('senderId', 'name email profilePicture')
