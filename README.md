@@ -1,6 +1,6 @@
 # CampusTrade NITJ
 
-A production-ready MERN marketplace for **NIT Jalandhar students only**. Buy and sell items within campus, chat to arrange meetups, meetup + cash only. No online payments.
+A production-ready MERN marketplace for **NIT Jalandhar students only**. Buy and sell items within campus, chat to arrange meetups, No online payments.
 
 ## Features
 

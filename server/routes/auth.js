@@ -7,6 +7,12 @@ import { loginLimiter, registerLimiter } from '../middleware/rateLimit.js';
 import { isAllowedEmailDomain } from '../utils/emailDomain.js';
 import { sendOTPEmail } from '../utils/email.js';
 import crypto from 'crypto';
+import Listing from '../models/Listing.js';
+import Chat from '../models/Chat.js';
+import Message from '../models/Message.js';
+import SavedListing from '../models/SavedListing.js';
+import Report from '../models/Report.js';
+import BlockLog from '../models/BlockLog.js';
 
 const router = express.Router();
 
@@ -296,4 +302,58 @@ router.delete('/delete-profile-picture', protect, async (req, res) => {
   }
 });
 
+
+// DELETE /api/auth/account
+router.delete('/account', protect, async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required to delete account.' });
+    }
+
+    // Verify password before deleting
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const match = await user.comparePassword(password);
+    if (!match) {
+      return res.status(401).json({ message: 'Incorrect password.' });
+    }
+
+    const userId = req.user._id;
+
+    // Delete all listings by this user
+    await Listing.deleteMany({ sellerId: userId });
+
+    // Delete all chats this user is part of
+    const userChats = await Chat.find({ participants: userId }).select('_id');
+    const chatIds = userChats.map(c => c._id);
+    await Message.deleteMany({ chatId: { $in: chatIds } });
+    await Chat.deleteMany({ participants: userId });
+
+    // Delete all messages sent by this user in other chats
+    await Message.deleteMany({ senderId: userId });
+
+    // Delete saved listings by this user
+    await SavedListing.deleteMany({ userId });
+
+    // Delete reports filed by this user
+    await Report.deleteMany({ reporterId: userId });
+
+    // Delete block logs tied to this user
+    await BlockLog.deleteMany({ userId });
+
+    // Finally delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'Account deleted successfully.' });
+
+  } catch (err) {
+    console.error('Account delete error:', err);
+    res.status(500).json({ message: 'Failed to delete account.' });
+  }
+});
 export default router;

@@ -2,7 +2,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-console.log('MONGO URI LOADED:', process.env.MONGODB_URI);
+//console.log('MONGO URI LOADED:', process.env.MONGODB_URI);
 
 // THEN all other imports
 import express from 'express';
@@ -28,7 +28,7 @@ connectDB();
 
 const app = express();
 app.use((req, res, next) => {
-  console.log('>>> REQUEST RECEIVED:', req.method, req.url);
+  //console.log('>>> REQUEST RECEIVED:', req.method, req.url);
   next();
 });
 const httpServer = createServer(app);

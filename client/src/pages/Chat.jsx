@@ -259,12 +259,13 @@ export default function Chat() {
   };
 
   const selectChat = async (chat) => {
-    console.log('Selecting chat:', chat._id);
-    setActiveChat(chat);
-    setMessages([]);
-    setError(null);
-    await loadMessages(chat._id);
-  };
+  console.log('Selecting chat:', chat._id);
+  console.log('Full chat object:', JSON.stringify(chat, null, 2));
+  setActiveChat(chat);
+  setMessages([]);
+  setError(null);
+  await loadMessages(chat._id);
+};
 
   const sendMessage = async () => {
     const content = newMessage.trim();
@@ -459,12 +460,16 @@ export default function Chat() {
                         {activeChat.listingId?.title || 'Listing'}
                       </p>
                     </div>
-                    <button
-                      onClick={() => navigate(`/listings/${activeChat.listingId?._id}`)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      View Listing →
-                    </button>
+ <button
+  onClick={() => {
+    console.log('Navigating to:', `/listing/${activeChat.listingId?._id}`);
+    navigate(`/listing/${activeChat.listingId?._id}`);
+  }}
+  disabled={!activeChat.listingId?._id}
+  className="text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  View Listing →
+</button>
                   </div>
                 </div>
 
