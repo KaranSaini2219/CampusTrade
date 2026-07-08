@@ -59,7 +59,6 @@ router.post('/start', protect, async (req, res) => {
   try {
     const { listingId } = req.body;
     
-    console.log('🚀 Starting chat - User:', req.user._id, 'Listing:', listingId);
     
     if (!listingId) {
       return res.status(400).json({ message: 'Listing ID is required.' });
@@ -72,11 +71,11 @@ router.post('/start', protect, async (req, res) => {
     // Find the listing
     const listing = await Listing.findById(listingId).lean();
     if (!listing) {
-      console.log('❌ Listing not found:', listingId);
+      //console.log('❌ Listing not found:', listingId);
       return res.status(404).json({ message: 'Listing not found.' });
     }
 
-    console.log('✅ Listing found:', listing.title, 'Seller:', listing.sellerId);
+    //console.log('✅ Listing found:', listing.title, 'Seller:', listing.sellerId);
 
     if (!listing.sellerId) {
       return res.status(400).json({ message: 'This listing has no seller.' });
@@ -93,7 +92,7 @@ router.post('/start', protect, async (req, res) => {
     // Verify seller exists
     const seller = await User.findById(sellerId).lean();
     if (!seller) {
-      console.log('❌ Seller not found:', sellerId);
+     // console.log('❌ Seller not found:', sellerId);
       return res.status(404).json({ message: 'The seller of this listing no longer exists.' });
     }
     
@@ -101,12 +100,12 @@ router.post('/start', protect, async (req, res) => {
   return res.status(403).json({ message: 'This user has been banned.' });
 }
 
-    console.log('✅ Seller exists:', seller.name);
+   // console.log('✅ Seller exists:', seller.name);
 
     // IMPORTANT: Sort participants for consistent querying and saving
     const sortedParticipants = sortParticipants([currentUserId, sellerId]);
     
-    console.log('🔍 Looking for existing chat with participants:', sortedParticipants);
+   // console.log('🔍 Looking for existing chat with participants:', sortedParticipants);
 
     // Find existing chat with sorted participants
     let chat = await Chat.findOne({
@@ -118,9 +117,9 @@ router.post('/start', protect, async (req, res) => {
       .lean();
 
     if (chat) {
-      console.log('✅ Found existing chat:', chat._id);
+      //console.log('✅ Found existing chat:', chat._id);
     } else {
-      console.log('📝 Creating new chat...');
+     // console.log('📝 Creating new chat...');
       
       try {
         // Create new chat with sorted participants
@@ -133,7 +132,7 @@ router.post('/start', protect, async (req, res) => {
           ]),
         });
         
-        console.log('✅ Chat created:', newChat._id);
+       // console.log('✅ Chat created:', newChat._id);
         
         // Fetch populated version
         chat = await Chat.findById(newChat._id)
@@ -146,7 +145,7 @@ router.post('/start', protect, async (req, res) => {
         
         // Handle duplicate key error
         if (createErr.code === 11000) {
-          console.log('⚠️ Duplicate detected, fetching existing chat...');
+         // console.log('⚠️ Duplicate detected, fetching existing chat...');
           
           chat = await Chat.findOne({
             participants: { $all: sortedParticipants },
@@ -187,7 +186,7 @@ router.post('/start', protect, async (req, res) => {
       updatedAt: chat.updatedAt,
     };
 
-    console.log('✅ Chat ready:', response._id, 'with', response.otherUser.name);
+   // console.log('✅ Chat ready:', response._id, 'with', response.otherUser.name);
     res.json(response);
     
   } catch (err) {
@@ -394,3 +393,6 @@ router.post('/:chatId/messages', protect, async (req, res) => {
 });
 
 export default router;
+
+
+

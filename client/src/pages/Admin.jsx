@@ -38,6 +38,15 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+  if (!window.confirm('Permanently delete this user? This cannot be undone.')) return;
+  try {
+    await api.delete(`/admin/users/${userId}`);
+    setUsers(prev => prev.filter(u => u._id !== userId));
+  } catch (err) {
+    alert('Failed to delete user');
+  }
+};
   const handleReportStatus = async (reportId, status) => {
     try {
       await api.put(`/admin/reports/${reportId}`, { status });
@@ -104,16 +113,24 @@ export default function Admin() {
                           <span className="text-green-600">Active</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                     <td className="px-4 py-3">
                         {u.role !== 'admin' && (
-                          <button
-                            onClick={() => handleBan(u._id, !u.isBanned)}
-                            className={`px-3 py-1 rounded text-sm ${
-                              u.isBanned ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                            }`}
-                          >
-                            {u.isBanned ? 'Unban' : 'Ban'}
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleBan(u._id, !u.isBanned)}
+                              className={`px-3 py-1 rounded text-sm ${
+                                u.isBanned ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {u.isBanned ? 'Unban' : 'Ban'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u._id)}
+                              className="px-3 py-1 rounded text-sm bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

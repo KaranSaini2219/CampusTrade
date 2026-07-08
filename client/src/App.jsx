@@ -11,6 +11,8 @@ import Chat from './pages/Chat';
 import Admin from './pages/Admin';
 import EditListing from './pages/EditListing';
 import Footer from './components/Footer';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -49,6 +51,8 @@ function AppRoutes() {
           <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/profile"
             element={

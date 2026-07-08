@@ -216,7 +216,7 @@ export default function NewListing() {
         </div>
 
         {/* Price */}
-        <div>
+       <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
             Price (₹) <span className="text-red-500">*</span>
           </label>
@@ -225,6 +225,7 @@ export default function NewListing() {
             name="price"
             value={form.price}
             onChange={handleChange}
+            onWheel={(e) => e.target.blur()}
             required
             min={0}
             placeholder="Enter price"

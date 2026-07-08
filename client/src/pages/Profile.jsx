@@ -393,52 +393,91 @@ const handleDeleteAccount = async () => {
       </div>{error && (
   <p className="text-red-600 text-sm mb-3">{error}</p>
 )}
-      {/* Danger Zone */}
-<div className="mt-10 border border-red-200 rounded-lg p-5 bg-red-50">
-  <h3 className="text-lg font-semibold text-red-700 mb-2">Danger Zone</h3>
-  <p className="text-sm text-slate-600 mb-4">
-    Deleting your account is permanent and cannot be undone. All your listings,
-    chats, and saved items will be removed.
-  </p>
-
-  {!showDeleteConfirm ? (
+{/* Danger Zone */}
+<div className="bg-white rounded-lg shadow-sm border border-red-200 overflow-hidden mt-8">
+  <div className="px-6 py-4 flex items-center justify-between gap-4">
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center shrink-0 mt-0.5">
+        <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM10 13a1 1 0 100-2 1 1 0 000 2zm-1-7a1 1 0 011-1h.01a1 1 0 011 1v3a1 1 0 01-1 1H10a1 1 0 01-1-1V6z" clipRule="evenodd" />
+        </svg>
+      </div>
+      <div>
+        <h3 className="text-slate-900 font-semibold text-sm">Delete your account</h3>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Removes your listings, chats, and saved items permanently. This can't be undone.
+        </p>
+      </div>
+    </div>
     <button
       onClick={() => setShowDeleteConfirm(true)}
-      className="text-red-600 border border-red-300 rounded px-4 py-2 hover:bg-red-100"
+      className="shrink-0 text-red-600 border border-red-200 rounded-md px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
     >
-      Delete My Account
+      Delete account
     </button>
-  ) : (
-    <div className="space-y-3">
+  </div>
+</div>
+
+{/* Confirmation Modal */}
+{showDeleteConfirm && (
+  <div
+    className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"
+    onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setError(null); }}
+  >
+    <div
+      className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM10 13a1 1 0 100-2 1 1 0 000 2zm-1-7a1 1 0 011-1h.01a1 1 0 011 1v3a1 1 0 01-1 1H10a1 1 0 01-1-1V6z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-slate-900">Delete your account?</h3>
+      </div>
+
+      <p className="text-sm text-slate-600 mb-4">
+        This permanently removes your profile, listings, chat history, and saved items.
+        There's no way to undo this.
+      </p>
+
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2 mb-3">
+          {error}
+        </p>
+      )}
+
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        Enter your password to confirm
+      </label>
       <input
         type="password"
-        placeholder="Enter your password to confirm"
         value={deletePassword}
         onChange={(e) => setDeletePassword(e.target.value)}
-        className="w-full border rounded px-3 py-2"
+        className="w-full border border-slate-300 rounded-md px-3 py-2 mb-5 focus:outline-none focus:ring-2 focus:ring-red-300"
+        placeholder="Password"
+        autoFocus
       />
+
       <div className="flex gap-3">
-       <button
-  onClick={handleDeleteAccount}
-  disabled={deleting}
-  className="bg-red-600 text-white rounded px-4 py-2 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
->
-  {deleting ? 'Deleting...' : 'Confirm Delete'}
-</button>
         <button
-          onClick={() => {
-            setShowDeleteConfirm(false);
-            setDeletePassword('');
-            setError(null);
-          }}
-          className="border rounded px-4 py-2"
+          onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setError(null); }}
+          className="flex-1 border border-slate-300 rounded-md px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           Cancel
         </button>
+        <button
+          onClick={handleDeleteAccount}
+          disabled={deleting}
+          className="flex-1 bg-red-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {deleting ? 'Deleting…' : 'Delete account'}
+        </button>
       </div>
     </div>
-  )}
-</div>
+  </div>
+)}
     </div>
   );
 }

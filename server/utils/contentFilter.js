@@ -30,9 +30,11 @@ export function checkBannedContent(text) {
   }
 
   const lowerText = text.toLowerCase();
-  const matchedKeywords = BANNED_KEYWORDS.filter((keyword) =>
-    lowerText.includes(keyword.toLowerCase())
-  );
+  const matchedKeywords = BANNED_KEYWORDS.filter((keyword) => {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wordBoundaryRegex = new RegExp(`\\b${escaped}\\b`, 'i');
+    return wordBoundaryRegex.test(lowerText);
+  });
 
   return {
     isBlocked: matchedKeywords.length > 0,

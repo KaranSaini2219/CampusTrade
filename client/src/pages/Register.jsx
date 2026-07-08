@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-const YEARS = ['1', '2', '3', '4', 'MTech'];
+const YEARS = ['1', '2', '3', '4', 'MTech','Phd'];
 const BRANCHES = [
-  'CSE', 'ECE', 'EE', 'ME', 'CE', 'CHE', 'MSE', 'ICE', 'BT',
+  'CSE','DSE','IT','MNC','ECE', 'EE', 'ME', 'CE', 'CHE','ICE', 'BT','TT',
   'Mathematics', 'Physics', 'Chemistry', 'Other'
 ];
 

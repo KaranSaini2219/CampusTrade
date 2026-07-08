@@ -9,7 +9,7 @@ import { checkBannedContent } from '../utils/contentFilter.js';
 import { upload, cloudinary, useCloudinary } from '../config/cloudinary.js';
 import User from '../models/User.js';
 
-console.log('>>> THIS IS THE LISTINGS FILE BEING LOADED <<<');
+//console.log('>>> THIS IS THE LISTINGS FILE BEING LOADED <<<');
 
 const router = express.Router();
 
@@ -43,7 +43,7 @@ router.get('/saved', protect, async (req, res) => {
 
 // GET /api/listings - Public (search, filter, sort) or ?mine=1 for own
 router.get('/', async (req, res) => {
-  console.log('>>> ROUTE HANDLER ENTERED <<<');
+  //console.log('>>> ROUTE HANDLER ENTERED <<<');
   try {
     const { search, category, sort = 'newest', minPrice, maxPrice, mine } = req.query;
     const query = {};
@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
   query.isSold = false;
   const bannedUsers = await User.find({ isBanned: true }).select('_id').lean();
   const bannedIds = bannedUsers.map(u => u._id);
-  console.log('BANNED USER IDS:', bannedIds);
+  //console.log('BANNED USER IDS:', bannedIds);
   query.sellerId = { $nin: bannedIds };
 }
 
@@ -78,14 +78,14 @@ router.get('/', async (req, res) => {
     if (sort === 'price-desc') sortOpt = { price: -1 };
     
     
-console.log("DB:", Listing.db.name);
-console.log("QUERY:", query);
+//console.log("DB:", Listing.db.name);
+//console.log("QUERY:", query);
 
 const total = await Listing.countDocuments({});
 const unsold = await Listing.countDocuments({ isSold: false });
 
-console.log("TOTAL LISTINGS:", total);
-console.log("UNSOLD LISTINGS:", unsold);
+//console.log("TOTAL LISTINGS:", total);
+//console.log("UNSOLD LISTINGS:", unsold);
 
     const listings = await Listing.find(query)
       .populate('sellerId', 'name year branch')

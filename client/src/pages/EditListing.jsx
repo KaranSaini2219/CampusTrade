@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 const CATEGORIES = ['Electronics', 'Books', 'Furniture', 'Sports', 'Clothing', 'Study Material', 'Other'];
 const CONDITIONS = ['New', 'Like new', 'Used'];
@@ -8,6 +9,7 @@ const CONDITIONS = ['New', 'Like new', 'Used'];
 export default function EditListing() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -21,9 +23,16 @@ export default function EditListing() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  useEffect(() => {
+ useEffect(() => {
     api.get(`/listings/${id}`).then((res) => {
       const l = res.data;
+
+      const sellerId = l.sellerId?._id || l.sellerId;
+      if (!user || sellerId !== user.id) {
+        navigate('/');
+        return;
+      }
+
       setForm({
         title: l.title || '',
         description: l.description || '',
@@ -33,7 +42,7 @@ export default function EditListing() {
       });
       setExistingImages(l.images || []);
     }).catch(() => navigate('/')).finally(() => setFetching(false));
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -110,6 +119,7 @@ export default function EditListing() {
             name="price"
             value={form.price}
             onChange={handleChange}
+            onWheel={(e) => e.target.blur()}
             required
             min={0}
             className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500"

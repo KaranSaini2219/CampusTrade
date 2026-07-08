@@ -44,6 +44,10 @@ const seed = async () => {
       { email: "rohan.mehta@nitj.ac.in",   password: "Test@1234",  name: "Rohan Mehta",   year: "4", branch: "ME"  },
       { email: "sneha.gupta@nitj.ac.in",   password: "Test@1234",  name: "Sneha Gupta",   year: "1", branch: "CE"  },
       { email: "vikram.singh@nitj.ac.in",  password: "Test@1234",  name: "Vikram Singh",  year: "MTech", branch: "CSE" },
+      { email: "lovishg.ece.23@nitj.ac.in",  password: "Test@1234",  name: "Test User One",  year: "2", branch: "IT" },
+  { email: "manavs.cs.23@nitj.ac.in",  password: "Test@1234",  name: "Test User Two",  year: "3", branch: "EEE" }
+      
+      
     ];
 
     const createdUsers = [];

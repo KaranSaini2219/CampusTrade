@@ -13,6 +13,7 @@ import Message from '../models/Message.js';
 import SavedListing from '../models/SavedListing.js';
 import Report from '../models/Report.js';
 import BlockLog from '../models/BlockLog.js';
+import { deleteUserCascade } from '../utils/deleteUser.js';
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6).max(50),
   name: z.string().min(1).max(100).trim(),
-  year: z.enum(['1', '2', '3', '4', 'MTech']),
+  year: z.enum(['1', '2', '3', '4', 'MTech','Phd']),
   branch: z.string().min(1).max(100).trim(),
 });
 
@@ -323,31 +324,33 @@ router.delete('/account', protect, async (req, res) => {
       return res.status(401).json({ message: 'Incorrect password.' });
     }
 
+    // const userId = req.user._id;
+
+    // // Delete all listings by this user
+    // await Listing.deleteMany({ sellerId: userId });
+
+    // // Delete all chats this user is part of
+    // const userChats = await Chat.find({ participants: userId }).select('_id');
+    // const chatIds = userChats.map(c => c._id);
+    // await Message.deleteMany({ chatId: { $in: chatIds } });
+    // await Chat.deleteMany({ participants: userId });
+
+    // // Delete all messages sent by this user in other chats
+    // await Message.deleteMany({ senderId: userId });
+
+    // // Delete saved listings by this user
+    // await SavedListing.deleteMany({ userId });
+
+    // // Delete reports filed by this user
+    // await Report.deleteMany({ reporterId: userId });
+
+    // // Delete block logs tied to this user
+    // await BlockLog.deleteMany({ userId });
+
+    // // Finally delete the user
+    // await User.findByIdAndDelete(userId);
     const userId = req.user._id;
-
-    // Delete all listings by this user
-    await Listing.deleteMany({ sellerId: userId });
-
-    // Delete all chats this user is part of
-    const userChats = await Chat.find({ participants: userId }).select('_id');
-    const chatIds = userChats.map(c => c._id);
-    await Message.deleteMany({ chatId: { $in: chatIds } });
-    await Chat.deleteMany({ participants: userId });
-
-    // Delete all messages sent by this user in other chats
-    await Message.deleteMany({ senderId: userId });
-
-    // Delete saved listings by this user
-    await SavedListing.deleteMany({ userId });
-
-    // Delete reports filed by this user
-    await Report.deleteMany({ reporterId: userId });
-
-    // Delete block logs tied to this user
-    await BlockLog.deleteMany({ userId });
-
-    // Finally delete the user
-    await User.findByIdAndDelete(userId);
+    await deleteUserCascade(userId);
 
     res.json({ message: 'Account deleted successfully.' });
 
@@ -356,4 +359,66 @@ router.delete('/account', protect, async (req, res) => {
     res.status(500).json({ message: 'Failed to delete account.' });
   }
 });
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', registerLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.json({ message: 'If that email is registered, an OTP has been sent.' });
+    }
+
+    const otp = generateOTP();
+    user.resetPasswordOTP = otp;
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    await sendOTPEmail(email.toLowerCase(), otp);
+
+    res.json({ message: 'If that email is registered, an OTP has been sent.' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Failed to process request.' });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', registerLimiter, async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP, and new password are required.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      resetPasswordOTP: otp.toString().trim(),
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Password reset successfully. Please log in.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Failed to reset password.' });
+  }
+});
+
 export default router;

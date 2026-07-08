@@ -4,6 +4,10 @@ import Listing from '../models/Listing.js';
 import Report from '../models/Report.js';
 import BlockLog from '../models/BlockLog.js';
 import { protect, adminOnly } from '../middleware/auth.js';
+import Chat from '../models/Chat.js';
+import Message from '../models/Message.js';
+
+import { deleteUserCascade } from '../utils/deleteUser.js';
 
 const router = express.Router();
 
@@ -40,11 +44,35 @@ router.put('/users/:id/ban', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/users/:id
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (user.role === 'admin') {
+      return res.status(400).json({ message: 'Cannot delete admin user.' });
+    }
+    await deleteUserCascade(req.params.id);
+    res.json({ message: 'User deleted successfully.' });
+  } catch (err) {
+    console.error('Admin delete user error:', err);
+    res.status(500).json({ message: 'Failed to delete user.' });
+  }
+});
+
+
 // DELETE /api/admin/listings/:id
 router.delete('/listings/:id', async (req, res) => {
   try {
     const listing = await Listing.findByIdAndDelete(req.params.id);
     if (!listing) return res.status(404).json({ message: 'Listing not found.' });
+
+    // Also remove any chats/messages tied to this listing
+    const relatedChats = await Chat.find({ listingId: req.params.id }, '_id');
+    const chatIds = relatedChats.map(c => c._id);
+    await Message.deleteMany({ chatId: { $in: chatIds } });
+    await Chat.deleteMany({ listingId: req.params.id });
+
     res.json({ message: 'Listing removed.' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to remove listing.' });

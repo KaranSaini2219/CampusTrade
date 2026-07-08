@@ -4,7 +4,7 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/campustrade-nitj');
     console.log('MongoDB connected');
-    console.log("Database:", mongoose.connection.db.databaseName);
+    //console.log("Database:", mongoose.connection.db.databaseName);
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
     process.exit(1);

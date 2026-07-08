@@ -260,7 +260,7 @@ export default function Chat() {
 
   const selectChat = async (chat) => {
   console.log('Selecting chat:', chat._id);
-  console.log('Full chat object:', JSON.stringify(chat, null, 2));
+
   setActiveChat(chat);
   setMessages([]);
   setError(null);
@@ -462,7 +462,7 @@ export default function Chat() {
                     </div>
  <button
   onClick={() => {
-    console.log('Navigating to:', `/listing/${activeChat.listingId?._id}`);
+    
     navigate(`/listing/${activeChat.listingId?._id}`);
   }}
   disabled={!activeChat.listingId?._id}

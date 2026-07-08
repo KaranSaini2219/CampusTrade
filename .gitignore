@@ -4,3 +4,7 @@ dist/
 uploads/
 *.log
 .DS_Store
+different_phases
+some_profiles
+learning_from_issues
+forge.js

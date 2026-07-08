@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   },
   year: {
     type: String,
-    enum: ['1', '2', '3', '4', 'MTech'],
+    enum: ['1', '2', '3', '4', 'MTech','Phd'],
     required: true,
   },
   branch: {
@@ -56,6 +56,9 @@ const userSchema = new mongoose.Schema({
   },
   verificationToken: String,
   verificationExpires: Date,
+  resetPasswordOTP: String,
+  resetPasswordExpires: Date,
+  
   createdAt: {
     type: Date,
     default: Date.now,

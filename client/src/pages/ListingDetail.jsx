@@ -255,7 +255,7 @@ export default function ListingDetail() {
               </button>
             )}
             
-            {user && (
+           {user && !listing.isSold && (
               <button
                 onClick={handleSave}
                 className={`px-6 py-3 rounded-lg font-medium border-2 transition-all ${

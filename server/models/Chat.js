@@ -30,7 +30,7 @@ const chatSchema = new mongoose.Schema({
 // Unique index ensures one chat per user-pair per listing
 // This ALLOWS: UserA+Seller+Item1, UserB+Seller+Item1 (different users)
 // This PREVENTS: UserA+Seller+Item1 twice (same conversation)
-chatSchema.index({ participants: 1, listingId: 1 });
+chatSchema.index({ participants: 1, listingId: 1 }, { unique: true });
 
 // Index for faster queries
 chatSchema.index({ updatedAt: -1 });
