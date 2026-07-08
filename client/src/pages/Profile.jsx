@@ -4,9 +4,15 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
 import Avatar from '../components/Avatar';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const { user, updateUser, logout } = useAuth();
   const [tab, setTab] = useState('listings');
   const [myListings, setMyListings] = useState([]);
   const [savedListings, setSavedListings] = useState([]);
@@ -96,6 +102,22 @@ export default function Profile() {
       alert('Failed to remove profile picture.');
     }
   };
+const handleDeleteAccount = async () => {
+  if (!deletePassword) {
+    setError('Please enter your password to confirm.');
+    return;
+  }
+  setDeleting(true);
+  setError(null);
+  try {
+    await api.delete('/auth/account', { data: { password: deletePassword } });
+    logout();
+    navigate('/', { replace: true });
+  } catch (err) {
+    setError(err.response?.data?.message || 'Failed to delete account.');
+    setDeleting(false);
+  }
+};
 
   // Calculate stats
   const activeListings = myListings.filter(l => !l.isSold).length;
@@ -368,7 +390,55 @@ export default function Profile() {
             )
           )}
         </div>
+      </div>{error && (
+  <p className="text-red-600 text-sm mb-3">{error}</p>
+)}
+      {/* Danger Zone */}
+<div className="mt-10 border border-red-200 rounded-lg p-5 bg-red-50">
+  <h3 className="text-lg font-semibold text-red-700 mb-2">Danger Zone</h3>
+  <p className="text-sm text-slate-600 mb-4">
+    Deleting your account is permanent and cannot be undone. All your listings,
+    chats, and saved items will be removed.
+  </p>
+
+  {!showDeleteConfirm ? (
+    <button
+      onClick={() => setShowDeleteConfirm(true)}
+      className="text-red-600 border border-red-300 rounded px-4 py-2 hover:bg-red-100"
+    >
+      Delete My Account
+    </button>
+  ) : (
+    <div className="space-y-3">
+      <input
+        type="password"
+        placeholder="Enter your password to confirm"
+        value={deletePassword}
+        onChange={(e) => setDeletePassword(e.target.value)}
+        className="w-full border rounded px-3 py-2"
+      />
+      <div className="flex gap-3">
+       <button
+  onClick={handleDeleteAccount}
+  disabled={deleting}
+  className="bg-red-600 text-white rounded px-4 py-2 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {deleting ? 'Deleting...' : 'Confirm Delete'}
+</button>
+        <button
+          onClick={() => {
+            setShowDeleteConfirm(false);
+            setDeletePassword('');
+            setError(null);
+          }}
+          className="border rounded px-4 py-2"
+        >
+          Cancel
+        </button>
       </div>
+    </div>
+  )}
+</div>
     </div>
   );
 }

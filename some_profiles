@@ -1,5 +1,18 @@
-admin@nitj.ac.in
-admin123
+// admin@nitj.ac.in
+// admin123
 
-lovish@nitj.ac.in
-123456
+// lovish@nitj.ac.in
+// 123456
+
+
+// const usersToSeed = [
+//       { email: "student@nitj.ac.in",      password: "student123", name: "Sample Student", year: "3", branch: "CSE" },
+//       { email: "arjun.sharma@nitj.ac.in",  password: "Test@1234",  name: "Arjun Sharma",  year: "3", branch: "CSE" },
+//       { email: "priya.verma@nitj.ac.in",   password: "Test@1234",  name: "Priya Verma",   year: "2", branch: "ECE" },
+//   
+//       
+//       { email: "vikram.singh@nitj.ac.in",  password: "Test@1234",  name: "Vikram Singh",  year: "MTech", branch: "CSE" },
+//     ];
+
+
+//     Test@1234
