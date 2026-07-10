@@ -44,7 +44,7 @@ export default function Chat() {
     const token = localStorage.getItem('token');
     if (!token || !user) return;
 
-    console.log('Initializing socket connection...');
+    //console.log('Initializing socket connection...');
     
     socketRef.current = io(window.location.origin, {
       auth: { token },
@@ -56,7 +56,7 @@ export default function Chat() {
     });
 
     socketRef.current.on('connect', () => {
-      console.log('✅ Socket connected');
+     // console.log('✅ Socket connected');
       setSocketConnected(true);
       setError(null);
     });
@@ -67,13 +67,13 @@ export default function Chat() {
     });
 
     socketRef.current.on('disconnect', (reason) => {
-      console.log('🔌 Socket disconnected:', reason);
+      //console.log('🔌 Socket disconnected:', reason);
       setSocketConnected(false);
     });
 
     // Listen for messages seen events
     socketRef.current.on('messagesSeen', ({ chatId, seenBy }) => {
-      console.log('📖 Messages seen in chat:', chatId);
+     // console.log('📖 Messages seen in chat:', chatId);
       
       // Update messages to mark them as seen
       setMessages((prev) => 
@@ -91,7 +91,7 @@ export default function Chat() {
 
     return () => {
       if (socketRef.current) {
-        console.log('Disconnecting socket...');
+        //console.log('Disconnecting socket...');
         socketRef.current.disconnect();
         socketRef.current = null;
       }
@@ -109,18 +109,18 @@ export default function Chat() {
         setError(null);
         
         const res = await api.get('/chats');
-        console.log('Loaded chats:', res.data.length);
+        //console.log('Loaded chats:', res.data.length);
         setChats(res.data);
 
         // Handle starting a new chat from a listing
         if (startListingId) {
-          console.log('Starting chat for listing:', startListingId);
+          //console.log('Starting chat for listing:', startListingId);
           
           try {
             const startRes = await api.post('/chats/start', { listingId: startListingId });
             const chat = startRes.data;
             
-            console.log('Chat started:', chat);
+            //console.log('Chat started:', chat);
             setActiveChat(chat);
             
             // Add to chats list if not already there
@@ -154,14 +154,14 @@ export default function Chat() {
     if (!socketRef.current || !activeChat) return;
 
     const chatId = activeChat._id;
-    console.log('Joining chat room:', chatId);
+   // console.log('Joining chat room:', chatId);
 
     // Join the chat room
     socketRef.current.emit('joinChat', chatId);
 
     // Listen for new messages
     const handleNewMessage = (msg) => {
-      console.log('Received new message:', msg);
+    //  console.log('Received new message:', msg);
       
       // Only add message if it belongs to active chat
       if (msg.chatId === chatId) {
@@ -205,7 +205,7 @@ export default function Chat() {
 
     // Cleanup
     return () => {
-      console.log('Leaving chat room:', chatId);
+     // console.log('Leaving chat room:', chatId);
       socketRef.current?.emit('leaveChat', chatId);
       socketRef.current?.off('newMessage', handleNewMessage);
     };
@@ -217,7 +217,7 @@ export default function Chat() {
       setError(null);
       
       const res = await api.get(`/chats/${chatId}/messages`);
-      console.log('Loaded messages:', res.data.length);
+     // console.log('Loaded messages:', res.data.length);
       setMessages(res.data);
 
       // Mark messages as seen after loading
@@ -225,7 +225,7 @@ export default function Chat() {
         markMessagesAsSeen(chatId);
       }, 1000);
     } catch (err) {
-      console.error('Error loading messages:', err);
+      //console.error('Error loading messages:', err);
       
       if (err.response?.status === 403) {
         setError('You do not have access to this chat.');
@@ -254,12 +254,12 @@ export default function Chat() {
         setActiveChat((prev) => ({ ...prev, unreadCount: 0 }));
       }
     } catch (err) {
-      console.error('Error marking messages as seen:', err);
+      //console.error('Error marking messages as seen:', err);
     }
   };
 
   const selectChat = async (chat) => {
-  console.log('Selecting chat:', chat._id);
+ // console.log('Selecting chat:', chat._id);
 
   setActiveChat(chat);
   setMessages([]);
@@ -271,7 +271,7 @@ export default function Chat() {
     const content = newMessage.trim();
     if (!content || !activeChat || sendingMessage) return;
 
-    console.log('Sending message:', content.substring(0, 50));
+   // console.log('Sending message:', content.substring(0, 50));
     setSendingMessage(true);
     const tempMessage = newMessage;
     setNewMessage(''); // Clear input immediately
@@ -279,14 +279,14 @@ export default function Chat() {
     try {
       // Try Socket.IO first if connected
       if (socketRef.current?.connected) {
-        console.log('Sending via Socket.IO');
+        //console.log('Sending via Socket.IO');
         socketRef.current.emit('sendMessage', {
           chatId: activeChat._id,
           content,
         });
       } else {
         // Fallback to HTTP
-        console.log('Sending via HTTP');
+       // console.log('Sending via HTTP');
         const { data } = await api.post(`/chats/${activeChat._id}/messages`, { content });
         
         // Add message to state if not already added by socket
@@ -297,7 +297,7 @@ export default function Chat() {
         });
       }
     } catch (err) {
-      console.error('Error sending message:', err);
+    //  console.error('Error sending message:', err);
       setNewMessage(tempMessage); // Restore message on error
       
       const errorMsg = err.response?.data?.message || 'Failed to send message.';

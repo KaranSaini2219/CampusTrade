@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
     api
       .get('/auth/me')     // ← always fetch fresh from DB on refresh
       .then((res) => {
-         console.log('FROM /auth/me:', res.data.user); // ← ADDED
+         //console.log('FROM /auth/me:', res.data.user); // ← ADDED
         setUser(res.data.user);
         localStorage.setItem('user', JSON.stringify(res.data.user));
       })

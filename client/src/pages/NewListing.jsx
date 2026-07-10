@@ -27,13 +27,13 @@ export default function NewListing() {
   const handleImages = (e) => {
     const fileList = e.target.files;
     
-    console.log('=== FILE SELECTION DEBUG ===');
-    console.log('FileList object:', fileList);
-    console.log('FileList.length:', fileList?.length);
-    console.log('FileList type:', typeof fileList);
+    //console.log('=== FILE SELECTION DEBUG ===');
+    //console.log('FileList object:', fileList);
+    //console.log('FileList.length:', fileList?.length);
+    //console.log('FileList type:', typeof fileList);
     
     if (!fileList || fileList.length === 0) {
-      console.log('❌ No files selected');
+      //console.log('❌ No files selected');
       return;
     }
     
@@ -41,10 +41,10 @@ export default function NewListing() {
     const filesArray = [];
     for (let i = 0; i < fileList.length; i++) {
       filesArray.push(fileList[i]);
-      console.log(`File ${i}:`, fileList[i].name, fileList[i].size);
+     // console.log(`File ${i}:`, fileList[i].name, fileList[i].size);
     }
     
-    console.log('✅ Extracted files:', filesArray.length);
+   // console.log('✅ Extracted files:', filesArray.length);
     
     // Limit to 5 images
     const limitedFiles = filesArray.slice(0, 5);
@@ -76,7 +76,7 @@ export default function NewListing() {
     const previews = limitedFiles.map(file => URL.createObjectURL(file));
     setImagePreviews(previews);
     
-    console.log('🎉 Successfully stored', limitedFiles.length, 'images');
+   // console.log('🎉 Successfully stored', limitedFiles.length, 'images');
   };
 
   const removeImage = (index) => {
@@ -112,9 +112,9 @@ export default function NewListing() {
       return;
     }
     
-    console.log('=== FORM SUBMISSION DEBUG ===');
-    console.log('Images array:', images);
-    console.log('Number of images:', images.length);
+    //console.log('=== FORM SUBMISSION DEBUG ===');
+    //console.log('Images array:', images);
+    //console.log('Number of images:', images.length);
     
     setLoading(true);
     
@@ -129,36 +129,36 @@ export default function NewListing() {
     for (let i = 0; i < images.length; i++) {
       const imageFile = images[i];
       fd.append('images', imageFile, imageFile.name);
-      console.log(`📎 Appended image ${i + 1}: ${imageFile.name} (${imageFile.size} bytes)`);
+     // console.log(`📎 Appended image ${i + 1}: ${imageFile.name} (${imageFile.size} bytes)`);
     }
     
     // Debug: Check FormData
-    console.log('=== FORMDATA CONTENTS ===');
+    //console.log('=== FORMDATA CONTENTS ===');
     for (let [key, value] of fd.entries()) {
       if (value instanceof File) {
-        console.log(key, '→', value.name, `(${value.size} bytes)`);
+        //console.log(key, '→', value.name, `(${value.size} bytes)`);
       } else {
-        console.log(key, '→', value);
+       // console.log(key, '→', value);
       }
     }
     
     try {
-      console.log('📤 Sending request...');
+     // console.log('📤 Sending request...');
       const { data } = await api.post('/listings', fd, {
         headers: { 
           'Content-Type': 'multipart/form-data'
         },
       });
       
-      console.log('=== SERVER RESPONSE ===');
-      console.log('Response data:', data);
-      console.log('Images in response:', data.images);
-      console.log('Number of images saved:', data.images?.length || 0);
+     // console.log('=== SERVER RESPONSE ===');
+     // console.log('Response data:', data);
+     // console.log('Images in response:', data.images);
+     // console.log('Number of images saved:', data.images?.length || 0);
       
       if (data.images?.length !== images.length) {
-        console.warn(`⚠️ Sent ${images.length} images but only ${data.images?.length} were saved!`);
+       // console.warn(`⚠️ Sent ${images.length} images but only ${data.images?.length} were saved!`);
       } else {
-        console.log('✅ All images saved successfully!');
+       // console.log('✅ All images saved successfully!');
       }
       
       navigate(`/listing/${data._id}`);
