@@ -40,6 +40,19 @@ export default function Profile() {
     }
   }, [location.hash]);
 
+  useEffect(() => {
+    if (location.hash === '#student-profile') {
+      window.setTimeout(() => {
+        document.getElementById('student-profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  }, [location.hash]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
+
   const handleSaveToggle = async (listingId) => {
     try {
       await api.post(`/listings/${listingId}/save`);
@@ -146,7 +159,7 @@ const handleDeleteAccount = async () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Student ID Card Section */}
-        <div className="bg-white rounded-lg shadow-lg border-2 border-slate-200 overflow-hidden mb-8">
+        <div id="student-profile" className="bg-white rounded-lg shadow-lg border-2 border-slate-200 overflow-hidden mb-8 scroll-mt-4">
           <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-3">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -251,6 +264,37 @@ const handleDeleteAccount = async () => {
             </div>
           </div>
         </div>
+
+        {/* Account Settings */}
+        <section className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <h3 className="font-semibold text-slate-900">Account settings</h3>
+            <p className="mt-1 text-sm text-slate-500">Manage your current session and account.</p>
+          </div>
+          <div className="divide-y divide-slate-100">
+            <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="font-medium text-slate-800">Log out</h4>
+                <p className="mt-1 text-sm text-slate-500">End your session on this device.</p>
+              </div>
+              <button onClick={handleLogout} className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:w-auto">
+                Log out
+              </button>
+            </div>
+            <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="font-medium text-red-700">Delete account</h4>
+                <p className="mt-1 text-sm text-slate-500">Permanently remove your listings, chats, and saved items.</p>
+              </div>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 sm:w-auto"
+              >
+                Delete account
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* Stats Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -402,31 +446,6 @@ const handleDeleteAccount = async () => {
       </div>{error && (
   <p className="text-red-600 text-sm mb-3">{error}</p>
 )}
-{/* Danger Zone */}
-<div className="bg-white rounded-lg shadow-sm border border-red-200 overflow-hidden mt-8">
-  <div className="px-6 py-4 flex items-center justify-between gap-4">
-    <div className="flex items-start gap-3">
-      <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center shrink-0 mt-0.5">
-        <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM10 13a1 1 0 100-2 1 1 0 000 2zm-1-7a1 1 0 011-1h.01a1 1 0 011 1v3a1 1 0 01-1 1H10a1 1 0 01-1-1V6z" clipRule="evenodd" />
-        </svg>
-      </div>
-      <div>
-        <h3 className="text-slate-900 font-semibold text-sm">Delete your account</h3>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Removes your listings, chats, and saved items permanently. This can't be undone.
-        </p>
-      </div>
-    </div>
-    <button
-      onClick={() => setShowDeleteConfirm(true)}
-      className="shrink-0 text-red-600 border border-red-200 rounded-md px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
-    >
-      Delete account
-    </button>
-  </div>
-</div>
-
 {/* Confirmation Modal */}
 {showDeleteConfirm && (
   <div

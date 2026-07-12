@@ -122,7 +122,7 @@ export default function Navbar() {
                 <span className="h-5 w-5"><PostIcon /></span>
                 Post
               </Link>
-              <Link to="/profile" className={`flex min-w-16 flex-col items-center gap-0.5 text-xs font-medium ${location.pathname === '/profile' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`} aria-current={location.pathname === '/profile' ? 'page' : undefined}>
+              <Link to="/profile#student-profile" className={`flex min-w-16 flex-col items-center gap-0.5 text-xs font-medium ${location.pathname === '/profile' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`} aria-current={location.pathname === '/profile' ? 'page' : undefined}>
                 <span className="h-5 w-5"><ProfileIcon /></span>
                 Profile
               </Link>
