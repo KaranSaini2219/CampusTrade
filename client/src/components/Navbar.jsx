@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Avatar from './Avatar';
+import CategoryChips from './CategoryChips';
 
 const Icon = ({ children, className = '' }) => (
   <span className={`inline-flex items-center justify-center w-4 h-4 ${className}`}>{children}</span>
@@ -22,12 +23,38 @@ const LogoutIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
   </svg>
 );
+const ProfileIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A9.97 9.97 0 0112 15c2.5 0 4.78.92 6.879 2.438M15 11a3 3 0 11-6 0 3 3 0 016 0zm6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const CartIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.1 2.2A1 1 0 006.8 17H17m0 0a2 2 0 100 4 2 2 0 000-4zM9 21a2 2 0 100-4 2 2 0 000 4z" />
+  </svg>
+);
+const SearchIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.35-5.15a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
+  </svg>
+);
+const PostIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileAppPages = ['/', '/profile', '/chat', '/new-listing'];
+  const bottomNavPages = ['/', '/profile', '/chat', '/new-listing'];
+  const isListingDetail = /^\/listing\/[^/]+$/.test(location.pathname);
+  const usesMobileAppHeader = mobileAppPages.includes(location.pathname) || isListingDetail;
+  const showsMobileBottomNav = bottomNavPages.includes(location.pathname) || isListingDetail;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -41,7 +68,74 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="z-50 shadow-md">
+    <>
+      {usesMobileAppHeader && (
+        <>
+          <div className="sticky top-0 z-50 shadow-md md:hidden">
+            <div className="bg-[#1e3a5f] px-4 py-2 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+                  <span className="text-lg font-bold text-amber-400">CT</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-amber-400">CampusTrade NITJ</p>
+                  <p className="text-xs text-white/80">Dr. B.R. Ambedkar</p>
+                  <p className="text-sm font-medium">National Institute of Technology Jalandhar</p>
+                </div>
+              </div>
+            </div>
+            <div className="h-0.5 bg-amber-400" />
+            <div className="bg-[#2d3748] px-3 py-2">
+              <div className="flex items-center gap-2">
+              <form onSubmit={handleSearch} className="flex flex-1 min-w-0">
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search listings..."
+                  className="min-w-0 flex-1 rounded-l-lg px-3 py-2 text-sm text-slate-900 outline-none"
+                />
+                <button type="submit" aria-label="Search listings" className="rounded-r-lg bg-amber-500 px-3 text-slate-900">
+                  <span className="block h-5 w-5"><SearchIcon /></span>
+                </button>
+              </form>
+              </div>
+              {location.pathname === '/' && (
+                <div className="mt-2 border-t border-white/10 pt-2">
+                  <CategoryChips />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {showsMobileBottomNav && (
+            <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-50 flex h-16 items-center justify-around border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(15,23,42,0.08)] md:hidden">
+              <Link to="/" className={`flex min-w-16 flex-col items-center gap-0.5 text-xs font-medium ${location.pathname === '/' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`} aria-current={location.pathname === '/' ? 'page' : undefined}>
+                <span className="h-5 w-5"><HomeIcon /></span>
+                Home
+              </Link>
+              <Link to="/chat" className={`flex min-w-12 flex-col items-center gap-0.5 text-xs font-medium ${location.pathname === '/chat' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`} aria-current={location.pathname === '/chat' ? 'page' : undefined}>
+                <span className="h-5 w-5"><ChatIcon /></span>
+                Chat
+              </Link>
+              <Link to="/new-listing" className={`flex min-w-12 flex-col items-center gap-0.5 text-xs font-medium ${location.pathname === '/new-listing' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`} aria-current={location.pathname === '/new-listing' ? 'page' : undefined}>
+                <span className="h-5 w-5"><PostIcon /></span>
+                Post
+              </Link>
+              <Link to="/profile" className={`flex min-w-16 flex-col items-center gap-0.5 text-xs font-medium ${location.pathname === '/profile' ? 'text-blue-800' : 'text-slate-600 hover:text-blue-800'}`} aria-current={location.pathname === '/profile' ? 'page' : undefined}>
+                <span className="h-5 w-5"><ProfileIcon /></span>
+                Profile
+              </Link>
+              <Link to="/profile#saved-items" className="flex min-w-12 flex-col items-center gap-0.5 text-xs font-medium text-slate-600 hover:text-blue-800">
+                <span className="h-5 w-5"><CartIcon /></span>
+                Cart
+              </Link>
+            </nav>
+          )}
+        </>
+      )}
+
+    <nav className={`${usesMobileAppHeader ? 'hidden md:block' : ''} z-50 shadow-md`}>
       {/* Top tier - NITJ branding */}
       <div className="bg-[#1e3a5f] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
@@ -184,5 +278,6 @@ export default function Navbar() {
         </div>
       )}
     </nav>
+    </>
   );
 }

@@ -111,14 +111,14 @@ export default function ListingDetail() {
   const hasMultipleImages = listing.images?.length > 1;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="grid lg:grid-cols-2 gap-8">
+    <div className="max-w-5xl mx-auto px-3 py-4 md:px-4 md:py-8">
+      <div className="grid gap-5 lg:grid-cols-2 md:gap-8">
         {/* Image Gallery Section */}
         <div className="space-y-4">
           {hasImages ? (
             <>
               {/* Main Image Display */}
-              <div className="relative aspect-square bg-slate-100 rounded-xl overflow-hidden group">
+              <div className="relative aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden group sm:aspect-square">
                 <img
                   src={listing.images[selectedImage]}
                   alt={listing.title}
@@ -130,7 +130,7 @@ export default function ListingDetail() {
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
                       aria-label="Previous image"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@ export default function ListingDetail() {
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
                       aria-label="Next image"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +179,7 @@ export default function ListingDetail() {
               )}
             </>
           ) : (
-            <div className="w-full aspect-square bg-slate-200 rounded-xl flex items-center justify-center text-slate-500">
+            <div className="w-full aspect-[4/3] bg-slate-200 rounded-xl flex items-center justify-center text-slate-500 sm:aspect-square">
               <div className="text-center">
                 <svg className="w-16 h-16 mx-auto mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -191,7 +191,7 @@ export default function ListingDetail() {
         </div>
 
         {/* Details Section */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {listing.isSold && (
             <span className="inline-block px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold">
               ❌ SOLD
@@ -199,8 +199,8 @@ export default function ListingDetail() {
           )}
           
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">{listing.title}</h1>
-            <p className="text-3xl font-bold text-blue-900 mt-3">{price}</p>
+            <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{listing.title}</h1>
+            <p className="mt-2 text-2xl font-bold text-blue-900 md:mt-3 md:text-3xl">{price}</p>
           </div>
 
           <div className="flex gap-2">
@@ -245,11 +245,11 @@ export default function ListingDetail() {
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
             {!listing.isSold && !isOwner && (
               <button
                 onClick={handleChat}
-                className="flex-1 px-6 py-3 bg-yellow-500 text-slate-900 rounded-lg font-semibold hover:bg-yellow-400 transition-colors"
+                className="w-full px-6 py-3 bg-yellow-500 text-slate-900 rounded-lg font-semibold hover:bg-yellow-400 transition-colors sm:flex-1"
               >
                 💬 Chat with Seller
               </button>
@@ -258,7 +258,7 @@ export default function ListingDetail() {
            {user && !listing.isSold && (
               <button
                 onClick={handleSave}
-                className={`px-6 py-3 rounded-lg font-medium border-2 transition-all ${
+                className={`w-full px-6 py-3 rounded-lg font-medium border-2 transition-all sm:w-auto ${
                   saved 
                     ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100' 
                     : 'border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -271,7 +271,7 @@ export default function ListingDetail() {
             {user && !isOwner && (
               <button
                 onClick={() => setReportOpen(true)}
-                className="px-6 py-3 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="w-full px-6 py-3 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors sm:w-auto"
               >
                 🚩 Report
               </button>
@@ -281,20 +281,20 @@ export default function ListingDetail() {
               <>
                 <button
                   onClick={handleMarkSold}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors sm:w-auto"
                 >
                   ✓ Mark as Sold
                 </button>
                 <Link
                   to={`/listing/${id}/edit`}
-                  className="px-6 py-3 border-2 border-blue-900 text-blue-900 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+                  className="w-full px-6 py-3 border-2 border-blue-900 text-blue-900 rounded-lg font-medium hover:bg-blue-50 transition-colors sm:w-auto"
                 >
                   ✏️ Edit
                 </Link>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="px-6 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium disabled:opacity-50 transition-colors"
+                  className="w-full px-6 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium disabled:opacity-50 transition-colors sm:w-auto"
                 >
                   🗑️ Delete
                 </button>

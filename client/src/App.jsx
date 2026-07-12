@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -42,10 +42,13 @@ function AdminRoute({ children }) {
 }
 
 function AppRoutes() {
+  const location = useLocation();
+  const hasMobileBottomNav = ['/', '/profile', '/chat', '/new-listing'].includes(location.pathname) || /^\/listing\/[^/]+$/.test(location.pathname);
+
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">
+      <main className={`min-h-screen ${hasMobileBottomNav ? 'pb-20 md:pb-0' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/listing/:id" element={<ListingDetail />} />

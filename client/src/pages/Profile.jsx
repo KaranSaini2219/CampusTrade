@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
 import Avatar from '../components/Avatar';
-import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [deletePassword, setDeletePassword] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState(null);
@@ -30,6 +30,15 @@ export default function Profile() {
       api.get('/listings?mine=1').then((res) => setMyListings(res.data));
     }
   }, [tab]);
+
+  useEffect(() => {
+    if (location.hash === '#saved-items') {
+      setTab('saved');
+      window.setTimeout(() => {
+        document.getElementById('saved-items')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  }, [location.hash]);
 
   const handleSaveToggle = async (listingId) => {
     try {
@@ -303,7 +312,7 @@ const handleDeleteAccount = async () => {
         </div>
 
         {/* Tabs Navigation */}
-        <div className="bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0">
+        <div id="saved-items" className="bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0 scroll-mt-4">
           <div className="flex gap-1 p-2">
             <button
               onClick={() => setTab('listings')}

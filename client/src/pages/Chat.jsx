@@ -353,9 +353,9 @@ export default function Chat() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-800">Messages</h1>
+    <div className="max-w-6xl mx-auto px-3 py-4 md:px-4 md:py-8">
+      <div className="mb-4 flex items-center justify-between md:mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 md:text-3xl">Messages</h1>
         
         {/* Connection Status Indicator */}
         <div className="flex items-center gap-2">
@@ -377,9 +377,9 @@ export default function Chat() {
       )}
 
       <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-        <div className="flex h-[700px]">
+        <div className="flex h-[calc(100dvh-13rem)] min-h-[420px] md:h-[700px]">
           {/* Chat List Sidebar */}
-          <div className="w-full md:w-96 border-r border-slate-200 flex flex-col">
+          <div className={`w-full border-r border-slate-200 md:w-96 ${activeChat ? 'hidden md:flex' : 'flex'} flex-col`}>
             <div className="p-4 border-b border-slate-200 bg-slate-50">
               <h2 className="font-semibold text-slate-700">Your Conversations</h2>
               <p className="text-xs text-slate-500 mt-1">{chats.length} chat{chats.length !== 1 ? 's' : ''}</p>
@@ -445,12 +445,15 @@ export default function Chat() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
+          <div className={`flex-1 min-w-0 flex-col bg-slate-50 ${activeChat ? 'flex' : 'hidden md:flex'}`}>
             {activeChat ? (
               <>
                 {/* Chat Header */}
-                <div className="p-5 border-b border-slate-200 bg-white shadow-sm">
+                <div className="p-3 border-b border-slate-200 bg-white shadow-sm md:p-5">
                   <div className="flex items-center gap-3">
+                    <button onClick={() => setActiveChat(null)} className="-ml-1 rounded p-1 text-slate-600 hover:bg-slate-100 md:hidden" aria-label="Back to conversations">
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 18l-6-6 6-6" /></svg>
+                    </button>
                     <Avatar user={activeChat.otherUser} size="md" />
                     <div className="flex-1">
                       <p className="font-semibold text-slate-800">
@@ -474,7 +477,7 @@ export default function Chat() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="flex-1 overflow-y-auto space-y-3 p-3 md:space-y-4 md:p-6">
                   {loadingMessages ? (
                     <div className="flex justify-center items-center h-full">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -505,7 +508,7 @@ export default function Chat() {
                           )}
                           {!isSentByMe && !showAvatar && <div className="w-8"></div>}
                           
-                          <div className={`max-w-[70%] ${isSentByMe ? 'items-end' : 'items-start'} flex flex-col`}>
+                          <div className={`max-w-[85%] md:max-w-[70%] ${isSentByMe ? 'items-end' : 'items-start'} flex flex-col`}>
                             <div
                               className={`px-4 py-2.5 rounded-2xl shadow-sm ${
                                 isSentByMe
@@ -541,13 +544,13 @@ export default function Chat() {
                 </div>
 
                 {/* Message Input */}
-                <div className="p-4 border-t border-slate-200 bg-white">
+                <div className="p-3 border-t border-slate-200 bg-white md:p-4">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       sendMessage();
                     }}
-                    className="flex gap-3"
+                    className="flex gap-2 md:gap-3"
                   >
                     <input
                       type="text"
@@ -557,12 +560,12 @@ export default function Chat() {
                       placeholder="Type your message..."
                       maxLength={2000}
                       disabled={sendingMessage}
-                      className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      className="min-w-0 flex-1 px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:bg-slate-100 disabled:cursor-not-allowed md:px-4 md:py-3"
                     />
                     <button
                       type="submit"
                       disabled={!newMessage.trim() || sendingMessage}
-                      className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm hover:shadow-md disabled:hover:shadow-sm"
+                      className="px-3 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm hover:shadow-md disabled:hover:shadow-sm md:px-6 md:py-3"
                     >
                       {sendingMessage ? (
                         <span className="flex items-center gap-2">

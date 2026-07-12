@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export default function ListingCard({ listing, saved, onSaveToggle }) {
+export default function ListingCard({ listing, saved, onSaveToggle, compactOnMobile = false }) {
   const image = listing.images?.[0] || '/placeholder.svg';
   const hasMultipleImages = listing.images?.length > 1;
   const imageCount = listing.images?.length || 0;
@@ -14,8 +14,8 @@ export default function ListingCard({ listing, saved, onSaveToggle }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg hover:border-blue-700 transition-all relative group">
       <Link to={`/listing/${listing._id}`} className="block">
-        <div className="aspect-square bg-slate-100 relative overflow-hidden">
-          <div className="aspect-square bg-slate-100 relative overflow-hidden">
+        <div className={`${compactOnMobile ? 'aspect-[4/3] sm:aspect-square' : 'aspect-square'} bg-slate-100 relative overflow-hidden`}>
+          <div className={`${compactOnMobile ? 'aspect-[4/3] sm:aspect-square' : 'aspect-square'} bg-slate-100 relative overflow-hidden`}>
   {listing.images?.length > 0 ? (
     <img
       src={listing.images[0]}
@@ -81,16 +81,16 @@ export default function ListingCard({ listing, saved, onSaveToggle }) {
           )}
         </div>
         
-        <div className="p-4">
-          <h3 className="font-semibold text-slate-900 line-clamp-1 group-hover:text-blue-900 transition-colors">
+        <div className={compactOnMobile ? 'p-2.5 sm:p-4' : 'p-4'}>
+          <h3 className={`${compactOnMobile ? 'text-sm sm:text-base' : ''} font-semibold text-slate-900 line-clamp-1 group-hover:text-blue-900 transition-colors`}>
             {listing.title}
           </h3>
-          <p className="text-blue-900 font-bold text-lg mt-1">{price}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded">
+          <p className={`${compactOnMobile ? 'text-base sm:text-lg' : 'text-lg'} text-blue-900 font-bold mt-1`}>{price}</p>
+          <div className={`${compactOnMobile ? 'mt-1.5 gap-1' : 'mt-2 gap-2'} flex items-center`}>
+            <span className={`${compactOnMobile ? 'px-1.5 py-0.5' : 'px-2 py-1'} text-xs bg-slate-100 text-slate-700 rounded`}>
               {listing.condition}
             </span>
-            <span className="text-xs text-slate-500">
+            <span className={`${compactOnMobile ? 'hidden sm:inline' : ''} text-xs text-slate-500`}>
               {listing.category}
             </span>
           </div>

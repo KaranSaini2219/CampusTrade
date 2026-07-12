@@ -17,10 +17,10 @@ export default function CategoryChips() {
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:pb-0">
       <Link
         to={buildUrl('')}
-        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+        className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
           !currentCategory
             ? 'bg-primary-600 text-white'
             : 'bg-white border border-slate-200 text-slate-600 hover:border-primary-300 hover:text-primary-600'
@@ -32,7 +32,7 @@ export default function CategoryChips() {
         <Link
           key={cat}
           to={buildUrl(cat)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             currentCategory === cat
               ? 'bg-primary-600 text-white'
               : 'bg-white border border-slate-200 text-slate-600 hover:border-primary-300 hover:text-primary-600'
