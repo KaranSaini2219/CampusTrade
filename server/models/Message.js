@@ -28,7 +28,9 @@ const messageSchema = new mongoose.Schema({
   },
 });
 
-messageSchema.index({ chatId: 1, createdAt: 1 });
-messageSchema.index({ chatId: 1, seenBy: 1 });
+// Supports fetching the newest page of a conversation and cursor pagination.
+messageSchema.index({ chatId: 1, createdAt: -1, _id: -1 });
+// Keeps defensive user-deletion cleanup indexed.
+messageSchema.index({ senderId: 1 });
 
 export default mongoose.model('Message', messageSchema);

@@ -19,6 +19,7 @@ import chatRoutes from './routes/chat.js';
 import reportRoutes from './routes/reports.js';
 import adminRoutes from './routes/admin.js';
 import { setupSocketIO } from './socket/index.js';
+import { generalLimiter } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,10 +28,6 @@ connectDB();
 // rest of your code stays exactly the same...
 
 const app = express();
-app.use((req, res, next) => {
-  //console.log('>>> REQUEST RECEIVED:', req.method, req.url);
-  next();
-});
 const httpServer = createServer(app);
 
 // Socket.IO setup
@@ -39,6 +36,9 @@ const io = new Server(httpServer, {
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
+  // Chat only needs WebSocket; disabling long-polling reduces connection overhead.
+  transports: ['websocket'],
+  perMessageDeflate: false,
 });
 setupSocketIO(io);
 app.set('io', io);
@@ -50,7 +50,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d', etag: true }));
+// Apply one inexpensive API-wide safety valve before route work reaches MongoDB.
+app.use('/api', generalLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

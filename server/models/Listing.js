@@ -52,7 +52,11 @@ const listingSchema = new mongoose.Schema({
 
 listingSchema.index({ title: 'text', description: 'text' });
 listingSchema.index({ sellerId: 1, createdAt: -1 });
-listingSchema.index({ category: 1, isSold: 1 });
-listingSchema.index({ createdAt: -1 });
+// Serves the public feed's unsold/category filter in its display order.
+listingSchema.index({ isSold: 1, category: 1, createdAt: -1 });
+// Serves the default public feed when no category is selected.
+listingSchema.index({ isSold: 1, createdAt: -1 });
+// Serves price-sorted filtered feeds without an in-memory sort.
+listingSchema.index({ isSold: 1, category: 1, price: 1 });
 
 export default mongoose.model('Listing', listingSchema);

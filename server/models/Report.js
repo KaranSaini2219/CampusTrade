@@ -32,7 +32,10 @@ const reportSchema = new mongoose.Schema({
   },
 });
 
-reportSchema.index({ status: 1 });
+// Covers duplicate-open-report checks and keeps one report per user/listing/status lookup fast.
+reportSchema.index({ reporterId: 1, listingId: 1, status: 1 });
+// Serves the admin status queue in newest-first order.
+reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ listingId: 1 });
 
 export default mongoose.model('Report', reportSchema);

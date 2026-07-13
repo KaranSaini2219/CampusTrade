@@ -1,79 +1,66 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import Message from '../models/Message.js';
 import Chat from '../models/Chat.js';
 
-const userSockets = new Map(); // userId -> Set of socketIds
+// A user room reaches every active device without broadcasting to unrelated sockets.
+const activeSocketByUser = new Map();
 
 export function setupSocketIO(io) {
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
-    if (!token) {
-      return next(new Error('Authentication required'));
-    }
+    if (!token) return next(new Error('Authentication required'));
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-      socket.userId = decoded.id;
+      socket.userId = jwt.verify(token, process.env.JWT_SECRET || 'secret').id;
       next();
-    } catch (err) {
+    } catch {
       next(new Error('Invalid token'));
     }
   });
 
   io.on('connection', (socket) => {
     const userId = socket.userId;
-    if (!userSockets.has(userId)) {
-      userSockets.set(userId, new Set());
-    }
-    userSockets.get(userId).add(socket.id);
+    // Replace stale duplicate connections for the same user to prevent duplicate emits.
+    const previousSocketId = activeSocketByUser.get(userId);
+    if (previousSocketId && previousSocketId !== socket.id) io.sockets.sockets.get(previousSocketId)?.disconnect(true);
+    activeSocketByUser.set(userId, socket.id);
     socket.join(`user:${userId}`);
 
-    socket.on('joinChat', (chatId) => {
-      socket.join(`chat:${chatId}`);
+    socket.on('joinChat', async (chatId) => {
+      if (!mongoose.Types.ObjectId.isValid(chatId)) return;
+      // Verify membership once before joining; clients cannot subscribe to arbitrary chat rooms.
+      const allowed = await Chat.exists({ _id: chatId, participants: userId });
+      if (allowed) socket.join(`chat:${chatId}`);
     });
 
-    socket.on('leaveChat', (chatId) => {
-      socket.leave(`chat:${chatId}`);
-    });
+    socket.on('leaveChat', (chatId) => socket.leave(`chat:${chatId}`));
 
-    socket.on('sendMessage', async (data) => {
+    socket.on('sendMessage', async (data, acknowledgement) => {
       try {
-        const { chatId, content } = data;
-        if (!chatId || !content?.trim()) return;
+        const chatId = data?.chatId;
+        const content = data?.content?.trim().slice(0, 2000);
+        if (!mongoose.Types.ObjectId.isValid(chatId) || !content) return acknowledgement?.({ ok: false });
+        const chat = await Chat.findOne({ _id: chatId, participants: userId }).select('participants').lean();
+        if (!chat) return acknowledgement?.({ ok: false, message: 'Not authorized' });
 
-        const chat = await Chat.findById(chatId);
-        if (!chat) return;
-        if (!chat.participants.some((p) => p.toString() === userId)) return;
-
-        const message = await Message.create({
-          chatId,
-          senderId: userId,
-          content: content.trim().slice(0, 2000),
+        const message = await Message.create({ chatId, senderId: userId, content, seenBy: [userId] });
+        const otherIds = chat.participants.filter((id) => id.toString() !== userId);
+        // Atomic counter update avoids a read-modify-save race for simultaneous messages.
+        await Chat.updateOne({ _id: chatId }, {
+          $set: { lastMessage: { content: message.content, senderId: userId, createdAt: message.createdAt } },
+          $inc: Object.fromEntries(otherIds.map((id) => [`unreadCount.${id}`, 1])),
         });
-
-        chat.lastMessage = {
-          content: message.content,
-          senderId: userId,
-          createdAt: message.createdAt,
-        };
-        chat.updatedAt = new Date();
-        await chat.save();
-
-        const populated = await Message.findById(message._id)
-          .populate('senderId', 'name')
-          .lean();
-
-        io.to(`chat:${chatId}`).emit('newMessage', populated);
+        // Compose the minimal sender projection; do not re-query solely to populate it.
+        const payload = { ...message.toObject(), chatId, senderId: { _id: userId } };
+        chat.participants.forEach((id) => io.to(`user:${id}`).emit('newMessage', payload));
+        acknowledgement?.({ ok: true, message: payload });
       } catch (err) {
-        socket.emit('error', { message: 'Failed to send message' });
+        acknowledgement?.({ ok: false, message: 'Failed to send message' });
       }
     });
 
     socket.on('disconnect', () => {
-      const set = userSockets.get(userId);
-      if (set) {
-        set.delete(socket.id);
-        if (set.size === 0) userSockets.delete(userId);
-      }
+      if (activeSocketByUser.get(userId) === socket.id) activeSocketByUser.delete(userId);
     });
   });
 }

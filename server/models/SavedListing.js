@@ -18,5 +18,7 @@ const savedListingSchema = new mongoose.Schema({
 });
 
 savedListingSchema.index({ userId: 1, listingId: 1 }, { unique: true });
+// Returns a user's saved listings in UI order without sorting in memory.
+savedListingSchema.index({ userId: 1, createdAt: -1 });
 
 export default mongoose.model('SavedListing', savedListingSchema);

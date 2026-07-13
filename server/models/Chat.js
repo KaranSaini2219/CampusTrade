@@ -32,8 +32,11 @@ const chatSchema = new mongoose.Schema({
 // This PREVENTS: UserA+Seller+Item1 twice (same conversation)
 chatSchema.index({ participants: 1, listingId: 1 }, { unique: true });
 
-// Index for faster queries
-chatSchema.index({ updatedAt: -1 });
+// Index for a participant's newest-first inbox. The standalone updatedAt index was
+// redundant because chats are always read through a participant or listing.
+chatSchema.index({ participants: 1, updatedAt: -1 });
+// Speeds up cleanup when a listing is removed.
+chatSchema.index({ listingId: 1 });
 
 // CRITICAL: Sort participants array before saving to ensure consistency
 // Without this, [A,B] and [B,A] are treated as different by the unique index!

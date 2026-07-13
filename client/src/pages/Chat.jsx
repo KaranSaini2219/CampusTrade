@@ -39,6 +39,23 @@ export default function Chat() {
   const socketRef = useRef(null);
   const markSeenTimeoutRef = useRef(null);
 
+  const loadChatAvatars = async () => {
+    try {
+      const { data } = await api.get('/chats/avatars');
+      const profilePictures = data.profilePictures || {};
+
+      setChats((prev) => prev.map((chat) => ({
+        ...chat,
+        otherUser: {
+          ...chat.otherUser,
+          profilePicture: profilePictures[chat.otherUser?._id] || null,
+        },
+      })));
+    } catch (err) {
+      // Avatars are optional; initials remain visible if this background request fails.
+    }
+  };
+
   // Initialize Socket.IO connection
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -49,7 +66,8 @@ export default function Chat() {
     socketRef.current = io(window.location.origin, {
       auth: { token },
       path: '/socket.io',
-      transports: ['websocket', 'polling'],
+      // WebSocket avoids polling request overhead for long-lived chat connections.
+      transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -107,17 +125,25 @@ export default function Chat() {
       try {
         setLoading(true);
         setError(null);
-        
-        const res = await api.get('/chats');
+        // Fetch the conversation list and start the requested chat at the same time.
+        // They are independent requests, so this removes one network round trip.
+        const chatsRequest = api.get('/chats');
+        const startChatRequest = startListingId
+          ? api.post('/chats/start', { listingId: startListingId })
+          : null;
+
+        const res = await chatsRequest;
+        const { chats: loadedChats = [] } = res.data;
         //console.log('Loaded chats:', res.data.length);
-        setChats(res.data);
+        setChats(loadedChats);
+        void loadChatAvatars();
 
         // Handle starting a new chat from a listing
-        if (startListingId) {
+        if (startChatRequest) {
           //console.log('Starting chat for listing:', startListingId);
           
           try {
-            const startRes = await api.post('/chats/start', { listingId: startListingId });
+            const startRes = await startChatRequest;
             const chat = startRes.data;
             
             //console.log('Chat started:', chat);
@@ -129,6 +155,7 @@ export default function Chat() {
               if (exists) return prev;
               return [chat, ...prev];
             });
+            void loadChatAvatars();
             
             await loadMessages(chat._id);
           } catch (err) {
@@ -155,9 +182,6 @@ export default function Chat() {
 
     const chatId = activeChat._id;
    // console.log('Joining chat room:', chatId);
-
-    // Join the chat room
-    socketRef.current.emit('joinChat', chatId);
 
     // Listen for new messages
     const handleNewMessage = (msg) => {
@@ -205,8 +229,6 @@ export default function Chat() {
 
     // Cleanup
     return () => {
-     // console.log('Leaving chat room:', chatId);
-      socketRef.current?.emit('leaveChat', chatId);
       socketRef.current?.off('newMessage', handleNewMessage);
     };
   }, [activeChat?._id, user?.id]);

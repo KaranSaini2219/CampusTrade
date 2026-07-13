@@ -19,6 +19,8 @@ const blockLogSchema = new mongoose.Schema({
   },
 });
 
+// Supports both per-user cleanup and newest-first admin audit views.
+blockLogSchema.index({ userId: 1, createdAt: -1 });
 blockLogSchema.index({ createdAt: -1 });
 
 export default mongoose.model('BlockLog', blockLogSchema);

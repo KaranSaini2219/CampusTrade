@@ -7,7 +7,7 @@ import BlockLog from '../models/BlockLog.js';
 import { protect } from '../middleware/auth.js';
 import { checkBannedContent } from '../utils/contentFilter.js';
 import { upload, cloudinary, useCloudinary } from '../config/cloudinary.js';
-import User from '../models/User.js';
+import { cacheListingFeed, getCachedListingFeed, invalidateListingFeedCache } from '../utils/listingFeedCache.js';
 
 //console.log('>>> THIS IS THE LISTINGS FILE BEING LOADED <<<');
 
@@ -28,7 +28,8 @@ const createListingSchema = z.object({
 router.get('/saved', protect, async (req, res) => {
   try {
     const saved = await SavedListing.find({ userId: req.user._id })
-      .populate('listingId')
+      // Only listing-card fields are needed; avoid hydrating unused documents.
+      .populate('listingId', 'title description price category condition images sellerId isSold createdAt updatedAt')
       .sort({ createdAt: -1 })
       .lean();
     const listings = saved
@@ -46,6 +47,11 @@ router.get('/', async (req, res) => {
   //console.log('>>> ROUTE HANDLER ENTERED <<<');
   try {
     const { search, category, sort = 'newest', minPrice, maxPrice, mine } = req.query;
+    const cacheKey = req.originalUrl;
+    if (!mine) {
+      const cached = getCachedListingFeed(cacheKey);
+      if (cached) return res.json(cached);
+    }
     const query = {};
     if (mine) {
       try {
@@ -56,12 +62,8 @@ router.get('/', async (req, res) => {
         return res.json([]);
       }
     } else {
-  query.isSold = false;
-  const bannedUsers = await User.find({ isBanned: true }).select('_id').lean();
-  const bannedIds = bannedUsers.map(u => u._id);
-  //console.log('BANNED USER IDS:', bannedIds);
-  query.sellerId = { $nin: bannedIds };
-}
+      query.isSold = false;
+    }
 
     if (search) {
       query.$or = [
@@ -81,18 +83,17 @@ router.get('/', async (req, res) => {
 //console.log("DB:", Listing.db.name);
 //console.log("QUERY:", query);
 
-const total = await Listing.countDocuments({});
-const unsold = await Listing.countDocuments({ isSold: false });
-
-//console.log("TOTAL LISTINGS:", total);
-//console.log("UNSOLD LISTINGS:", unsold);
-
     const listings = await Listing.find(query)
-      .populate('sellerId', 'name year branch')
+      // A populate match avoids a separate full banned-user ID scan on every feed request.
+      .populate({ path: 'sellerId', select: 'name year branch', match: { isBanned: false } })
       .sort(sortOpt)
       .lean();
 
-    res.json(listings);
+    // A matched-out seller is a banned/deleted seller and must remain hidden from the public feed.
+    const response = mine ? listings : listings.filter((listing) => listing.sellerId);
+    // Cache public-only responses briefly; mutations invalidate all filter variants.
+    if (!mine) cacheListingFeed(cacheKey, response);
+    res.json(response);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch listings.' });
   }
@@ -102,16 +103,11 @@ const unsold = await Listing.countDocuments({ isSold: false });
 router.get('/:id', async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id)
-      .populate('sellerId', 'name year branch email')
+      .populate('sellerId', 'name year branch')
       .lean();
 
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found.' });
-    }
-
-    // Don't expose seller email/phone in public response
-    if (listing.sellerId) {
-      listing.sellerId.email = undefined;
     }
 
     res.json(listing);
@@ -172,10 +168,11 @@ router.post('/', protect, upload.array('images', 5), async (req, res) => {
       sellerId: req.user._id,
     });
 
-    const populated = await Listing.findById(listing._id)
-      .populate('sellerId', 'name year branch')
-      .lean();
-    res.status(201).json(populated);
+    // Reuse authenticated seller data instead of issuing a read-after-write populate query.
+    const response = listing.toObject();
+    response.sellerId = { _id: req.user._id, name: req.user.name, year: req.user.year, branch: req.user.branch };
+    invalidateListingFeedCache();
+    res.status(201).json(response);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ message: err.errors[0]?.message || 'Invalid input' });
@@ -247,10 +244,11 @@ router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
     Object.assign(listing, { ...data, images: imageUrls });
     await listing.save();
 
-    const populated = await Listing.findById(listing._id)
-      .populate('sellerId', 'name year branch')
-      .lean();
-    res.json(populated);
+    // The owner is already authenticated, so no second listing/populate read is necessary.
+    const response = listing.toObject();
+    response.sellerId = { _id: req.user._id, name: req.user.name, year: req.user.year, branch: req.user.branch };
+    invalidateListingFeedCache();
+    res.json(response);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ message: err.errors[0]?.message || 'Invalid input' });
@@ -268,6 +266,7 @@ router.delete('/:id', protect, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this listing.' });
     }
     await Listing.findByIdAndDelete(req.params.id);
+    invalidateListingFeedCache();
     res.json({ message: 'Listing deleted.' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete listing.' });
@@ -283,13 +282,14 @@ router.post('/:id/save', protect, async (req, res) => {
     const existing = await SavedListing.findOne({
       userId: req.user._id,
       listingId: req.params.id,
-    });
+    }).select('_id').lean();
 
     if (existing) {
-      await SavedListing.findByIdAndDelete(existing._id);
+      await SavedListing.deleteOne({ _id: existing._id });
       return res.json({ saved: false, message: 'Removed from saved.' });
     }
 
+    // The unique compound index is the final race-safe guard for concurrent toggles.
     await SavedListing.create({ userId: req.user._id, listingId: req.params.id });
     res.json({ saved: true, message: 'Added to saved.' });
   } catch (err) {
@@ -300,13 +300,14 @@ router.post('/:id/save', protect, async (req, res) => {
 // POST /api/listings/:id/mark-sold - Protected (owner only)
 router.post('/:id/mark-sold', protect, async (req, res) => {
   try {
-    const listing = await Listing.findById(req.params.id);
-    if (!listing) return res.status(404).json({ message: 'Listing not found.' });
-    if (listing.sellerId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized.' });
-    }
-    listing.isSold = true;
-    await listing.save();
+    // Authorization and update in one indexed operation remove a read/write round trip.
+    const listing = await Listing.findOneAndUpdate(
+      { _id: req.params.id, sellerId: req.user._id },
+      { $set: { isSold: true } },
+      { new: true }
+    );
+    if (!listing) return res.status(404).json({ message: 'Listing not found or not authorized.' });
+    invalidateListingFeedCache();
     res.json(listing);
   } catch (err) {
     res.status(500).json({ message: 'Failed to mark as sold.' });

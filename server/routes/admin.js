@@ -6,6 +6,7 @@ import BlockLog from '../models/BlockLog.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import Chat from '../models/Chat.js';
 import Message from '../models/Message.js';
+import { invalidateListingFeedCache } from '../utils/listingFeedCache.js';
 
 import { deleteUserCascade } from '../utils/deleteUser.js';
 
@@ -18,7 +19,8 @@ router.use(protect, adminOnly);
 router.get('/users', async (req, res) => {
   try {
     const users = await User.find()
-      .select('-password -verificationToken')
+      // Explicit projection prevents reset data and base64 avatars inflating this admin table.
+      .select('email name year branch phone role isBanned isVerified createdAt')
       .sort({ createdAt: -1 })
       .lean();
     res.json(users);
@@ -38,6 +40,8 @@ router.put('/users/:id/ban', async (req, res) => {
     }
     user.isBanned = !!ban;
     await user.save();
+    // Banning changes public-feed visibility, so invalidate cached anonymous feeds.
+    invalidateListingFeedCache();
     res.json({ message: ban ? 'User banned.' : 'User unbanned.', user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update user.' });
@@ -68,10 +72,14 @@ router.delete('/listings/:id', async (req, res) => {
     if (!listing) return res.status(404).json({ message: 'Listing not found.' });
 
     // Also remove any chats/messages tied to this listing
-    const relatedChats = await Chat.find({ listingId: req.params.id }, '_id');
+    const relatedChats = await Chat.find({ listingId: req.params.id }, '_id').lean();
     const chatIds = relatedChats.map(c => c._id);
-    await Message.deleteMany({ chatId: { $in: chatIds } });
-    await Chat.deleteMany({ listingId: req.params.id });
+    // These independent deletes can run in parallel after chat IDs are known.
+    await Promise.all([
+      Message.deleteMany({ chatId: { $in: chatIds } }),
+      Chat.deleteMany({ listingId: req.params.id }),
+    ]);
+    invalidateListingFeedCache();
 
     res.json({ message: 'Listing removed.' });
   } catch (err) {
