@@ -8,3 +8,4 @@ different_phases
 some_profiles
 learning_from_issues
 forge.js
+.env.example

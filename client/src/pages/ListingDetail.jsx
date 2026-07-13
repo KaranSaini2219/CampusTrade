@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ReportModal from '../components/ReportModal';
+import { formatAcademicYear } from '../utils/formatAcademicYear';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -226,7 +227,10 @@ export default function ListingDetail() {
                 <span className="font-medium">{seller.name}</span>
               </p>
               <p className="text-slate-600 text-sm mt-1">
-                Year {seller.year} · {seller.branch}
+                {formatAcademicYear(seller.year)}
+              </p>
+              <p className="text-slate-600 text-sm mt-1">
+                {seller.branch}
               </p>
               {showPhone && seller.phone && (
                 <p className="text-slate-700 mt-2 font-medium">

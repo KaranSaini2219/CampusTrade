@@ -48,6 +48,21 @@ Required variables:
 | `ALLOWED_EMAIL_DOMAINS` | Comma-separated, e.g. `nitj.ac.in` |
 | `CLIENT_URL` | Frontend URL, e.g. `http://localhost:5173` |
 
+For email verification and seller notifications, add these to the backend's `.env`
+(when running `cd server && npm run dev`, this is `server/.env`):
+
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | SMTP hostname, e.g. `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port, usually `587` |
+| `SMTP_SECURE` | `false` for port 587; `true` for port 465 |
+| `SMTP_USER` | SMTP account username/email |
+| `SMTP_PASS` | SMTP password or provider app password |
+| `EMAIL_FROM` | Sender address, e.g. `CampusTrade <your-email@example.com>` |
+
+Existing installations using `EMAIL_USER` and `EMAIL_PASS` remain supported,
+but still need the `SMTP_HOST`, `SMTP_PORT`, and `SMTP_SECURE` settings.
+
 Optional (for image uploads):
 
 | Variable | Description |

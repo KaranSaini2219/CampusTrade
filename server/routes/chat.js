@@ -4,6 +4,7 @@ import Message from '../models/Message.js';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
+import { sendNewConversationEmail } from '../utils/email.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -116,6 +117,8 @@ router.post('/start', protect, async (req, res) => {
       .populate('listingId', 'title price images isSold')
       .lean();
 
+    let isNewConversation = false;
+
     if (chat) {
       //console.log('✅ Found existing chat:', chat._id);
     } else {
@@ -131,6 +134,7 @@ router.post('/start', protect, async (req, res) => {
             [sortedParticipants[1], 0],
           ]),
         });
+        isNewConversation = true;
         
        // console.log('✅ Chat created:', newChat._id);
         
@@ -161,6 +165,19 @@ router.post('/start', protect, async (req, res) => {
         } else {
           throw createErr;
         }
+      }
+    }
+
+    // Notification failure must never prevent a buyer from opening a chat.
+    if (isNewConversation) {
+      try {
+        await sendNewConversationEmail({
+          seller,
+          buyer: req.user,
+          listing,
+        });
+      } catch (emailErr) {
+        console.error('New conversation email failed:', emailErr.message);
       }
     }
 
