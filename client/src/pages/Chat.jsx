@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import Avatar from '../components/Avatar';
 
+// Vite injects this value at build time for a separately deployed backend.
+const socketServerUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || window.location.origin;
+
 // WhatsApp-style checkmark components - uniform thickness
 const SingleCheck = ({ className = '' }) => (
   <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -63,7 +66,7 @@ export default function Chat() {
 
     //console.log('Initializing socket connection...');
     
-    socketRef.current = io(window.location.origin, {
+    socketRef.current = io(socketServerUrl, {
       auth: { token },
       path: '/socket.io',
       // WebSocket avoids polling request overhead for long-lived chat connections.

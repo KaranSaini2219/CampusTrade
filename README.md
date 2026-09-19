@@ -112,7 +112,10 @@ Creates admin (`admin@nitj.ac.in` / `admin123`) and sample user/listings.
 3. Root directory: `client`.
 4. Build command: `npm run build`.
 5. Output directory: `dist`.
-6. Add env: `VITE_API_URL` = your backend URL (if using separate API URL).
+6. Add environment variable `VITE_API_URL` with the public backend URL, for
+   example `https://campustrade-api.onrender.com` (do not append `/api`).
+7. Deploy. The included `client/vercel.json` rewrites client-side routes to
+   `index.html`, so direct visits to pages such as `/chat` keep working.
 
 ### Backend (Render / Railway)
 
@@ -120,7 +123,11 @@ Creates admin (`admin@nitj.ac.in` / `admin123`) and sample user/listings.
 2. Root directory: `server`.
 3. Build: `npm install`.
 4. Start: `npm start`.
-5. Add env vars: `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `ALLOWED_EMAIL_DOMAINS`, Cloudinary vars.
+5. Add the variables from `server/.env.example`. Set `CLIENT_URL` to the exact
+   Vercel URL (without a trailing slash) and set `API_URL` to this Render
+   service's public URL.
+6. Use Cloudinary in deployment: Render's local filesystem is ephemeral, so
+   local image uploads disappear after a restart or redeploy.
 
 ### MongoDB Atlas
 

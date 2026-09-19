@@ -1,15 +1,20 @@
 import axios from 'axios';
 
+// In development Vite proxies /api to the local server.  In production, point
+// VITE_API_URL at the deployed backend (for example, https://api.example.com).
+const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+const apiBaseURL = backendUrl ? `${backendUrl}/api` : '/api';
+
 // For public endpoints (login, register, verify-email, etc.)
 export const authApi = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseURL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
 
 // For protected endpoints (everything else)
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseURL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
