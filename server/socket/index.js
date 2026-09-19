@@ -11,7 +11,7 @@ export function setupSocketIO(io) {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Authentication required'));
     try {
-      socket.userId = jwt.verify(token, process.env.JWT_SECRET || 'secret').id;
+      socket.userId = jwt.verify(token, process.env.JWT_SECRET).id;
       next();
     } catch {
       next(new Error('Invalid token'));

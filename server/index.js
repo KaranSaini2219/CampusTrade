@@ -23,12 +23,28 @@ import { generalLimiter } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// A missing signing secret makes every authentication token unsafe. Local
+// development may still use an explicitly configured value, while production
+// refuses to start until its host provides one as a secret environment variable.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured in production.');
+}
+
+if (process.env.NODE_ENV === 'production' && !process.env.MONGODB_URI) {
+  throw new Error('MONGODB_URI must be configured in production.');
+}
+
 connectDB();
 
 // rest of your code stays exactly the same...
 
 const app = express();
 const httpServer = createServer(app);
+
+// Render sits in front of this service as one trusted reverse proxy. This lets
+// express-rate-limit use the actual visitor IP from X-Forwarded-For instead of
+// treating every request as coming from the proxy.
+app.set('trust proxy', 1);
 
 // Socket.IO setup
 const io = new Server(httpServer, {

@@ -1,5 +1,8 @@
 node_modules/
+# Never commit credentials. Keep the documented example files versioned.
 .env
+.env.*
+!.env.example
 dist/
 uploads/
 *.log
