@@ -2,12 +2,15 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import Listing from '../models/Listing.js';
 
-dotenv.config();
-
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+// Resolve this explicitly so the script uses server/.env even when invoked
+// from the repository root or an automation runner.
+dotenv.config({ path: path.join(scriptDir, '..', '.env') });
+
 const uploadsDir = path.join(scriptDir, '..', 'uploads');
 const dryRun = process.argv.includes('--dry-run');
 
@@ -30,8 +33,14 @@ function assertConfiguration() {
 async function uploadFile(filePath) {
   // Load this after dotenv so Cloudinary sees local migration credentials.
   const { cloudinary } = await import('../config/cloudinary.js');
+  // A stable ID makes retries safe: if an upload succeeds but the database save
+  // is interrupted, the next run overwrites this same asset instead of adding
+  // another Cloudinary resource.
+  const publicId = `legacy-${crypto.createHash('sha256').update(path.basename(filePath)).digest('hex')}`;
   const result = await cloudinary.uploader.upload(filePath, {
     folder: 'campustrade-nitj/listings',
+    public_id: publicId,
+    overwrite: true,
     resource_type: 'image',
   });
   return result.secure_url;
