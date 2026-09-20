@@ -1,10 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configure Cloudinary if credentials exist
 const useCloudinary =
@@ -20,31 +15,32 @@ if (useCloudinary) {
   });
 }
 
-// Ensure uploads directory exists for local storage
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Multer: use memory storage for Cloudinary upload, disk for local
+// Listing images must not be written to a service's local disk: Render's free
+// filesystem is ephemeral and files vanish when the service restarts.
 const fileFilter = (req, file, cb) => {
   const allowed = /jpeg|jpg|png|webp|gif/;
   if (allowed.test(file.mimetype)) cb(null, true);
   else cb(new Error('Invalid image type. Use jpg, png, webp, gif.'), false);
 };
 
-const storage = useCloudinary
-  ? multer.memoryStorage()
-  : multer.diskStorage({
-      destination: (req, file, cb) => cb(null, uploadsDir),
-      filename: (req, file, cb) =>
-        cb(null, `${Date.now()}-${file.originalname.replace(/\s/g, '-')}`),
-    });
-
 export const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter,
 });
+
+export async function uploadListingImage(file) {
+  if (!useCloudinary) {
+    throw new Error('Listing image storage is not configured.');
+  }
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'campustrade-nitj/listings', resource_type: 'image' },
+      (err, result) => (err ? reject(err) : resolve(result.secure_url))
+    );
+    stream.end(file.buffer);
+  });
+}
 
 export { cloudinary, useCloudinary };

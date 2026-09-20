@@ -6,7 +6,7 @@ import SavedListing from '../models/SavedListing.js';
 import BlockLog from '../models/BlockLog.js';
 import { protect } from '../middleware/auth.js';
 import { checkBannedContent } from '../utils/contentFilter.js';
-import { upload, cloudinary, useCloudinary } from '../config/cloudinary.js';
+import { upload, uploadListingImage } from '../config/cloudinary.js';
 import { cacheListingFeed, getCachedListingFeed, invalidateListingFeedCache } from '../utils/listingFeedCache.js';
 
 //console.log('>>> THIS IS THE LISTINGS FILE BEING LOADED <<<');
@@ -141,25 +141,7 @@ router.post('/', protect, upload.array('images', 5), async (req, res) => {
     let imageUrls = [];
 
     if (req.files?.length) {
-      if (useCloudinary) {
-        const uploadPromises = req.files.map((file) => {
-          return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              { folder: 'campustrade-nitj' },
-              (err, result) => {
-                if (err) reject(err);
-                else resolve(result?.secure_url);
-              }
-            );
-            uploadStream.end(file.buffer);
-          });
-        });
-        imageUrls = await Promise.all(uploadPromises);
-      } else {
-        imageUrls = req.files.map(
-          (f) => `${process.env.API_URL || 'http://localhost:5000'}/uploads/${f.filename}`
-        );
-      }
+      imageUrls = await Promise.all(req.files.map(uploadListingImage));
     }
 
     const listing = await Listing.create({
@@ -219,26 +201,7 @@ router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
       } catch (_) {}
     }
     if (req.files?.length) {
-      if (useCloudinary) {
-        const uploadPromises = req.files.map((file) => {
-          return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              { folder: 'campustrade-nitj' },
-              (err, result) => {
-                if (err) reject(err);
-                else resolve(result?.secure_url);
-              }
-            );
-            uploadStream.end(file.buffer);
-          });
-        });
-        imageUrls = [...imageUrls, ...(await Promise.all(uploadPromises))].slice(0, 5);
-      } else {
-        const newUrls = req.files.map(
-          (f) => `${process.env.API_URL || 'http://localhost:5000'}/uploads/${f.filename}`
-        );
-        imageUrls = [...imageUrls, ...newUrls].slice(0, 5);
-      }
+      imageUrls = [...imageUrls, ...(await Promise.all(req.files.map(uploadListingImage)))].slice(0, 5);
     }
 
     Object.assign(listing, { ...data, images: imageUrls });
