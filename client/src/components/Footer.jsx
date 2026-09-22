@@ -5,7 +5,7 @@ export default function Footer() {
         <p className="text-slate-300 text-sm text-center">
           © 2026 CampusTrade – NIT Jalandhar <br />
           <span className="text-slate-400 text-xs">
-            Developed as an academic project by B.Tech CSE students, NIT Jalandhar
+            Developed as an academic project by Karan Saini, NIT Jalandhar
           </span>
         </p>
       </div>
